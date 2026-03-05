@@ -1,0 +1,167 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>Sola Scriptura & Confessio</title>
+    
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#006D77" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Sola Scriptura" />
+    
+    <link rel="icon" type="image/png" href="logo.png" />
+    <link rel="apple-touch-icon" href="logo.png" />
+
+    <script>
+      window.process = { env: { NODE_ENV: 'development' } };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script> -->
+    
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              petrol: {
+                50: '#E6F6F9',
+                100: '#CBEBEF',
+                500: '#006D77',
+                700: '#004E64',
+                900: '#003544',
+              },
+              paper: {
+                50: '#FAF9F6',
+                100: '#F5F2EA',
+                200: '#EBE5D5',
+              },
+              gold: {
+                500: '#C5A059',
+                600: '#B08D46',
+              },
+              crimson: {
+                600: '#A51C30',
+                700: '#821426',
+              },
+              navy: {
+                800: '#1A202C',
+                900: '#111827',
+              }
+            },
+            fontFamily: {
+              serif: ['Merriweather', 'Georgia', 'serif'],
+              sans: ['Inter', 'system-ui', 'sans-serif'],
+            },
+            borderRadius: {
+              '3xl': '24px',
+              '4xl': '32px',
+            }
+          },
+        },
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --sat: env(safe-area-inset-top);
+        --sar: env(safe-area-inset-right);
+        --sab: env(safe-area-inset-bottom);
+        --sal: env(safe-area-inset-left);
+      }
+      
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #FAF9F6;
+        overscroll-behavior-y: none;
+      }
+
+      .dark html, .dark body {
+        background-color: #111827;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-overflow-scrolling: touch;
+        user-select: none;
+      }
+
+      .reading-text {
+        font-family: 'Merriweather', serif;
+        user-select: text;
+        text-rendering: optimizeLegibility;
+      }
+
+      /* Textura de Papel Antigo (Sutil) */
+      .bg-paper-50 {
+        background-image: url("https://www.transparenttextures.com/patterns/parchment.png");
+        background-attachment: fixed;
+      }
+      
+      .dark .bg-navy-900 {
+        background-image: url("https://www.transparenttextures.com/patterns/dark-leather.png");
+        background-attachment: fixed;
+        background-opacity: 0.1;
+      }
+
+      .pt-safe { padding-top: var(--sat); }
+      .pb-safe { padding-bottom: var(--sab); }
+      .mt-safe { margin-top: var(--sat); }
+      .mb-safe { margin-bottom: var(--sab); }
+      
+      @keyframes fade-in-right {
+        from { opacity: 0; transform: translateX(50px); }
+        to { opacity: 1; transform: translateX(0); }
+      }
+      .animate-fade-in-right {
+        animation: fade-in-right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+
+      @keyframes fade-in {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in {
+        animation: fade-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      }
+
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+      }
+      .animate-float {
+        animation: float 6s ease-in-out infinite;
+      }
+
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { 
+        background: #cbd5e1; 
+        border-radius: 10px;
+      }
+      .dark ::-webkit-scrollbar-thumb { background: #334155; }
+
+      .active-ripple:active {
+        opacity: 0.7;
+        transform: scale(0.96);
+        transition: all 0.1s ease;
+      }
+
+      .logo-shadow {
+        filter: drop-shadow(0 20px 30px rgba(0, 109, 119, 0.2));
+      }
+    </style>
+</head>
+  <body class="bg-paper-50 text-petrol-900 dark:bg-navy-900 dark:text-gray-100 transition-colors duration-500">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
