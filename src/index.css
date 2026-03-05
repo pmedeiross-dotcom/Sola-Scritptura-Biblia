@@ -1,0 +1,51 @@
+:root {
+  --sat: env(safe-area-inset-top);
+  --sar: env(safe-area-inset-right);
+  --sab: env(safe-area-inset-bottom);
+  --sal: env(safe-area-inset-left);
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  user-select: none;
+  background-color: #FAF9F6;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dark body {
+  background-color: #111827;
+}
+
+.reading-text {
+  font-family: "Merriweather", "Georgia", "serif";
+  user-select: text;
+  text-rendering: optimizeLegibility;
+}
+
+.pt-safe { padding-top: var(--sat); }
+.pb-safe { padding-bottom: var(--sab); }
+.mt-safe { margin-top: var(--sat); }
+.mb-safe { margin-bottom: var(--sab); }
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { 
+  background: #cbd5e1; 
+  border-radius: 10px;
+}
+.dark ::-webkit-scrollbar-thumb { background: #334155; }
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { 
+  background: #cbd5e1; 
+  border-radius: 10px;
+}
+.dark ::-webkit-scrollbar-thumb { background: #334155; }
