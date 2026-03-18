@@ -376,9 +376,8 @@ const ReadingPlansScreen = ({ onBack, user }: { onBack: () => void, user: Fireba
   const handleGenerate = async () => {
     if (!topic.trim() || !user) return;
     setLoading(true);
-    const plan = await generateReadingPlan(topic);
-    
     try {
+      const plan = await generateReadingPlan(topic);
       await addDoc(collection(db, 'readingPlans'), {
         uid: user.uid,
         title: plan.title,
@@ -392,7 +391,7 @@ const ReadingPlansScreen = ({ onBack, user }: { onBack: () => void, user: Fireba
       setShowGenerator(false);
       setTopic('');
     } catch (err) {
-      console.error("Erro ao salvar plano:", err);
+      console.error("Erro ao gerar/salvar plano:", err);
     } finally {
       setLoading(false);
     }
@@ -574,17 +573,29 @@ const BibleScreen = ({ onAddNote, user, onReferenceChange }: { onAddNote: (ref: 
   const handleSermonOutline = async () => {
     if (!content) return;
     setLoadingSermon(true);
-    const res = await getSermonOutline(content.text);
-    setSermonOutline(res);
-    setLoadingSermon(false);
+    try {
+      const res = await getSermonOutline(content.text);
+      setSermonOutline(res);
+    } catch (err) {
+      console.error("Erro no esboço:", err);
+      setSermonOutline("Ocorreu um erro ao gerar o esboço do sermão.");
+    } finally {
+      setLoadingSermon(false);
+    }
   };
 
   const handleWordStudy = async () => {
     if (!content || !selectedWord) return;
     setLoadingWordStudy(true);
-    const res = await getWordStudy(content.text, selectedWord);
-    setWordStudy(res);
-    setLoadingWordStudy(false);
+    try {
+      const res = await getWordStudy(content.text, selectedWord);
+      setWordStudy(res);
+    } catch (err) {
+      console.error("Erro no estudo de palavra:", err);
+      setWordStudy("Ocorreu um erro ao realizar o estudo da palavra.");
+    } finally {
+      setLoadingWordStudy(false);
+    }
   };
 
   const handleSearch = async () => {
@@ -630,9 +641,15 @@ const BibleScreen = ({ onAddNote, user, onReferenceChange }: { onAddNote: (ref: 
     setLoading(true);
     setContent(null);
     setAnalysis(null);
-    const res = await getBibleContent(`${b.name} ${c}`);
-    setContent(res);
-    setLoading(false);
+    try {
+      const res = await getBibleContent(`${b.name} ${c}`);
+      setContent(res);
+    } catch (err) {
+      console.error("Erro ao carregar conteúdo:", err);
+      setContent({ text: "Erro ao carregar o conteúdo da Bíblia. Verifique sua conexão.", reference: `${b.name} ${c}` });
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -656,9 +673,15 @@ const BibleScreen = ({ onAddNote, user, onReferenceChange }: { onAddNote: (ref: 
   const handleAnalysis = async () => {
     if (!content) return;
     setLoadingAnalysis(true);
-    const res = await getTheologicalAnalysis(content.text);
-    setAnalysis(res);
-    setLoadingAnalysis(false);
+    try {
+      const res = await getTheologicalAnalysis(content.text);
+      setAnalysis(res);
+    } catch (err) {
+      console.error("Erro na análise:", err);
+      setAnalysis("Ocorreu um erro ao gerar a análise teológica.");
+    } finally {
+      setLoadingAnalysis(false);
+    }
   };
 
   return (
@@ -783,86 +806,6 @@ const BibleScreen = ({ onAddNote, user, onReferenceChange }: { onAddNote: (ref: 
               <div className="prose prose-slate dark:prose-invert max-w-none reading-text leading-loose text-lg">
                 <Markdown>{content.text}</Markdown>
               </div>
-
-              {/* Floating AI Study Button */}
-              <button 
-                onClick={() => setShowAIModal(true)}
-                className="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-petrol-900 text-white shadow-2xl flex items-center justify-center animate-bounce-subtle z-40"
-              >
-                <Sparkles className="w-6 h-6" />
-              </button>
-
-              {/* AI Analysis Modal */}
-              <AnimatePresence>
-                {showAIModal && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 100 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 100 }}
-                    className="fixed inset-x-0 bottom-0 z-50 bg-white dark:bg-navy-800 rounded-t-[40px] shadow-2xl border-t border-gray-100 dark:border-gray-700 max-h-[80vh] overflow-y-auto p-8"
-                  >
-                    <div className="flex justify-between items-center mb-6">
-                      <div className="flex items-center gap-3">
-                        <Sparkles className="w-6 h-6 text-petrol-500" />
-                        <h3 className="text-xl font-bold">Super IA: {book.name} {chapter}</h3>
-                      </div>
-                      <button onClick={() => setShowAIModal(false)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <X className="w-6 h-6" />
-                      </button>
-                    </div>
-
-                    <div className="space-y-6">
-                      <div className="p-6 rounded-3xl bg-petrol-50 dark:bg-petrol-900/30">
-                        <h4 className="font-bold text-petrol-900 dark:text-petrol-200 mb-2">Resumo Teológico</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{content.summary}</p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <button 
-                          onClick={async () => {
-                            setLoadingAnalysis(true);
-                            const res = await getTheologicalAnalysis(content.text);
-                            setAnalysis(res);
-                            setLoadingAnalysis(false);
-                          }}
-                          className="p-4 rounded-2xl bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 text-left"
-                        >
-                          <Layers className="w-5 h-5 text-petrol-500 mb-2" />
-                          <span className="text-xs font-bold block">Análise Reformada</span>
-                        </button>
-                        <button 
-                          onClick={async () => {
-                            setLoadingAnalysis(true);
-                            const res = await getSermonOutline(content.text);
-                            setAnalysis(res);
-                            setLoadingAnalysis(false);
-                          }}
-                          className="p-4 rounded-2xl bg-white dark:bg-gray-700 border border-gray-100 dark:border-gray-600 text-left"
-                        >
-                          <BookOpen className="w-5 h-5 text-petrol-500 mb-2" />
-                          <span className="text-xs font-bold block">Esboço de Sermão</span>
-                        </button>
-                      </div>
-
-                      {loadingAnalysis && (
-                        <div className="flex items-center justify-center py-12">
-                          <div className="w-8 h-8 border-4 border-petrol-500/30 border-t-petrol-500 rounded-full animate-spin" />
-                        </div>
-                      )}
-
-                      {analysis && (
-                        <motion.div 
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="prose prose-sm dark:prose-invert max-w-none bg-gray-50 dark:bg-navy-900 p-6 rounded-3xl"
-                        >
-                          <Markdown>{analysis}</Markdown>
-                        </motion.div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
 
               {!isFocusMode && (
                 <div className="space-y-6 pt-8 border-t border-gray-200 dark:border-gray-800">

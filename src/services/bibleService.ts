@@ -1,6 +1,18 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+let aiInstance: any = null;
+
+const getAI = () => {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.warn("GEMINI_API_KEY não encontrada.");
+      return null;
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+};
 
 export interface BibleContent {
   text: string;
@@ -11,6 +23,9 @@ export interface BibleContent {
 }
 
 export const getBibleContent = async (reference: string, version: string = 'ARA'): Promise<BibleContent> => {
+  const ai = getAI();
+  if (!ai) return { text: "Erro: Chave de API não configurada.", reference };
+
   const prompt = `Atue como um servidor de API de Bíblia. Retorne o texto bíblico para a referência "${reference}" na versão "${version}". 
   Além do texto, forneça um breve resumo teológico do capítulo e o contexto histórico.
   Retorne em formato JSON com as chaves: "text" (o texto completo com números de versículos), "reference" (a referência formatada), "summary" (resumo), "context" (contexto histórico), "crossReferences" (lista de 3-5 referências cruzadas importantes).`;
@@ -42,6 +57,9 @@ export const getBibleContent = async (reference: string, version: string = 'ARA'
 };
 
 export const getTheologicalAnalysis = async (text: string): Promise<string> => {
+  const ai = getAI();
+  if (!ai) return "Erro: Chave de API não configurada.";
+
   const prompt = `Analise o seguinte texto bíblico sob uma perspectiva reformada histórica (Sola Scriptura). 
   Destaque as doutrinas da graça, a soberania de Deus e a aplicação prática para a vida cristã:
   
@@ -59,6 +77,9 @@ export const getTheologicalAnalysis = async (text: string): Promise<string> => {
 };
 
 export const searchBible = async (query: string): Promise<{ reference: string, excerpt: string }[]> => {
+  const ai = getAI();
+  if (!ai) return [];
+
   const prompt = `Atue como um motor de busca bíblico. Para a consulta "${query}", retorne uma lista de até 10 referências bíblicas relevantes com um pequeno trecho do texto.
   Retorne APENAS um array JSON de objetos com as chaves: "reference" e "excerpt".`;
 
@@ -80,6 +101,9 @@ export const searchBible = async (query: string): Promise<{ reference: string, e
 };
 
 export const generateReadingPlan = async (topic: string): Promise<{ title: string, days: { day: number, reference: string, focus: string }[] }> => {
+  const ai = getAI();
+  if (!ai) return { title: "Plano Personalizado", days: [] };
+
   const prompt = `Crie um plano de leitura bíblica de 7 dias sobre o tema "${topic}" sob uma perspectiva reformada.
   Retorne APENAS um objeto JSON com as chaves: "title" (título do plano) e "days" (um array de 7 objetos com "day", "reference" e "focus" - uma breve explicação do porquê desta leitura).`;
 
@@ -101,6 +125,9 @@ export const generateReadingPlan = async (topic: string): Promise<{ title: strin
 };
 
 export const getSermonOutline = async (text: string): Promise<string> => {
+  const ai = getAI();
+  if (!ai) return "Erro: Chave de API não configurada.";
+
   const prompt = `Crie um esboço de sermão expositivo para o seguinte texto bíblico, seguindo uma estrutura homilética reformada (Introdução, Pontos Expositivos, Aplicação, Conclusão):
   
   "${text}"`;
@@ -117,6 +144,9 @@ export const getSermonOutline = async (text: string): Promise<string> => {
 };
 
 export const getWordStudy = async (text: string, word: string): Promise<string> => {
+  const ai = getAI();
+  if (!ai) return "Erro: Chave de API não configurada.";
+
   const prompt = `Realize um estudo léxico da palavra "${word}" no contexto do seguinte texto bíblico. 
   Explique o termo original (Grego ou Hebraico), seu significado semântico e sua importância teológica no pensamento reformado:
   
@@ -134,6 +164,9 @@ export const getWordStudy = async (text: string, word: string): Promise<string> 
 };
 
 export const getDailyDevotional = async (verse: { text: string, ref: string }): Promise<string> => {
+  const ai = getAI();
+  if (!ai) return "Erro: Chave de API não configurada.";
+
   const prompt = `Escreva uma meditação devocional diária curta e inspiradora baseada no versículo "${verse.ref}: ${verse.text}". 
   A meditação deve ser centrada no evangelho, pastoral e encorajadora, com uma oração final.`;
 
@@ -149,6 +182,9 @@ export const getDailyDevotional = async (verse: { text: string, ref: string }): 
 };
 
 export const generateVerseImage = async (verse: string): Promise<string | null> => {
+  const ai = getAI();
+  if (!ai) return null;
+
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
