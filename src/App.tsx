@@ -28,7 +28,15 @@ import {
   Layers,
   Trash2,
   BookOpen,
-  FileText
+  FileText,
+  Zap,
+  ArrowRight,
+  MessageCircle,
+  FlaskConical,
+  BrainCircuit,
+  Send,
+  User,
+  Info,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
@@ -131,15 +139,15 @@ const BottomNav = ({ active, onChange }: { active: Screen, onChange: (s: Screen)
   const items = [
     { id: 'home', icon: HomeIcon, label: 'Início' },
     { id: 'bible', icon: Book, label: 'Bíblia' },
-    { id: 'ai', icon: Sparkles, label: 'Super IA' },
+    { id: 'ai', icon: Sparkles, label: 'Estudo IA' },
     { id: 'confessions', icon: Library, label: 'Símbolos' },
     { id: 'library', icon: Bookmark, label: 'Notas' },
     { id: 'settings', icon: SettingsIcon, label: 'Ajustes' },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-navy-900/80 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800 pb-safe z-50">
-      <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
+    <nav className="fixed bottom-6 left-6 right-6 z-50">
+      <div className="max-w-md mx-auto bg-white/80 dark:bg-navy-900/80 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-full shadow-2xl px-4 py-3 flex justify-between items-center transition-all duration-300">
         {items.map((item) => {
           const isActive = active === item.id;
           return (
@@ -150,18 +158,23 @@ const BottomNav = ({ active, onChange }: { active: Screen, onChange: (s: Screen)
                 onChange(item.id as Screen);
               }}
               className={cn(
-                "flex flex-col items-center justify-center w-full h-full transition-all relative",
-                isActive ? "text-petrol-500 dark:text-petrol-100" : "text-gray-400 dark:text-gray-500"
+                "relative p-3 rounded-full transition-all duration-300 group",
+                isActive ? "text-petrol-500 scale-110" : "text-gray-400 hover:text-petrol-400"
               )}
             >
+              <item.icon className="w-6 h-6" />
               {isActive && (
-                <motion.div
-                  layoutId="nav-indicator"
-                  className="absolute top-1 w-8 h-1 bg-petrol-500 dark:bg-petrol-100 rounded-full"
+                <motion.div 
+                  layoutId="nav-glow"
+                  className="absolute inset-0 bg-petrol-500/10 rounded-full -z-10 blur-md"
                 />
               )}
-              <item.icon className={cn("w-5 h-5 mb-1 transition-transform", isActive && "scale-110")} />
-              <span className="text-[9px] font-medium uppercase tracking-wider">{item.label}</span>
+              <span className={cn(
+                "absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-widest opacity-0 transition-all duration-300",
+                isActive && "opacity-100 -bottom-1"
+              )}>
+                {item.label}
+              </span>
             </button>
           );
         })}
@@ -171,19 +184,17 @@ const BottomNav = ({ active, onChange }: { active: Screen, onChange: (s: Screen)
 };
 
 const Header = ({ title, showBack, onBack, actions }: { title: string, showBack?: boolean, onBack?: () => void, actions?: React.ReactNode }) => (
-  <header className="sticky top-0 left-0 right-0 bg-paper-50/80 dark:bg-navy-900/80 backdrop-blur-xl z-40 pt-safe border-b border-gray-200/50 dark:border-gray-800/50">
-    <div className="h-16 flex items-center px-4 max-w-4xl mx-auto justify-between">
-      <div className="flex items-center gap-3">
-        {showBack && (
-          <button onClick={onBack} className="p-2 -ml-2 rounded-full active:bg-gray-200 dark:active:bg-gray-800">
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-        )}
-        <h1 className="text-lg font-bold tracking-tight text-petrol-900 dark:text-white truncate max-w-[200px]">{title}</h1>
-      </div>
-      <div className="flex items-center gap-2">
-        {actions}
-      </div>
+  <header className="sticky top-0 z-40 bg-paper-50/80 dark:bg-navy-900/80 backdrop-blur-md border-b border-black/5 dark:border-white/5 px-4 py-4 flex items-center justify-between transition-all duration-300">
+    <div className="flex items-center gap-3">
+      {showBack && (
+        <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-90">
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+      )}
+      <h1 className="text-xl font-display font-bold text-petrol-900 dark:text-white tracking-tight">{title}</h1>
+    </div>
+    <div className="flex items-center gap-1">
+      {actions}
     </div>
   </header>
 );
@@ -226,133 +237,176 @@ const HomeScreen = ({ onNavigate, user }: { onNavigate: (s: Screen) => void, use
   };
 
   return (
-    <div className="p-4 space-y-6 pb-24 animate-fade-in">
-      {/* Hero Card */}
-      <div className="relative overflow-hidden rounded-[40px] bg-navy-900 text-white shadow-2xl min-h-[300px] flex flex-col justify-end p-8">
+    <div className="p-6 space-y-8 pb-32 animate-fade-in max-w-4xl mx-auto">
+      {/* Hero Section - Editorial Style */}
+      <section className="relative overflow-hidden rounded-[2.5rem] bg-navy-950 text-white shadow-2xl min-h-[400px] flex flex-col justify-end p-8 md:p-12 transition-all duration-500 group">
         {verseImage ? (
           <img 
             src={verseImage} 
             alt="Verse Background" 
-            className="absolute inset-0 w-full h-full object-cover opacity-60"
+            className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:scale-105 transition-transform duration-1000"
             referrerPolicy="no-referrer"
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-petrol-600 to-navy-950 opacity-80" />
+          <div className="absolute inset-0 bg-gradient-to-br from-petrol-900/80 via-navy-950/90 to-black opacity-90" />
         )}
         
-        <div className="relative z-10">
-          <div className="flex justify-between items-start mb-4">
-            <span className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-70">Versículo do Dia</span>
-            <div className="flex gap-2">
+        <div className="relative z-10 space-y-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-4 bg-gold-500 rounded-full" />
+              <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-gold-400/80">Palavra do Dia</span>
+            </div>
+            <div className="flex gap-3">
               <button 
                 onClick={handleGenerateImage}
                 disabled={loadingImage}
-                className="p-2 rounded-full bg-white/10 backdrop-blur-md active:scale-90 transition-all disabled:opacity-50"
+                className="p-3 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 hover:bg-white/10 active:scale-90 transition-all disabled:opacity-50"
                 title="Gerar Imagem"
               >
                 {loadingImage ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Layers className="w-4 h-4" />}
               </button>
               <button 
                 onClick={handleShare}
-                className="p-2 rounded-full bg-white/10 backdrop-blur-md active:scale-90 transition-all"
+                className="p-3 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 hover:bg-white/10 active:scale-90 transition-all"
                 title="Compartilhar"
               >
                 <Share2 className="w-4 h-4" />
               </button>
             </div>
           </div>
-          <p className="text-2xl font-serif italic leading-relaxed mb-6">
-            "{verse.text}"
-          </p>
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-lg text-gold-400">{verse.ref}</span>
+
+          <blockquote className="space-y-4">
+            <p className="text-3xl md:text-4xl font-display italic leading-[1.3] text-white/95 tracking-tight">
+              "{verse.text}"
+            </p>
+            <footer className="flex items-center justify-between pt-4 border-t border-white/10">
+              <cite className="not-italic font-bold text-xl text-gold-400 font-display">{verse.ref}</cite>
+              <button 
+                onClick={handleGenerateDevotional}
+                disabled={loadingDevotional}
+                className="group flex items-center gap-2 px-6 py-3 rounded-full bg-gold-500 text-navy-950 text-xs font-bold uppercase tracking-widest hover:bg-gold-400 active:scale-95 transition-all disabled:opacity-50"
+              >
+                <Sparkles className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                {loadingDevotional ? "Sondando..." : "Meditação IA"}
+              </button>
+            </footer>
+          </blockquote>
+        </div>
+      </section>
+
+      {/* Bento Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* Main Devotional Card - Spans 2 columns if present */}
+        {devotional ? (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="md:col-span-2 p-8 rounded-[2rem] bg-white dark:bg-navy-800 border border-black/5 dark:border-white/5 shadow-xl shadow-black/5"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-xl bg-petrol-50 dark:bg-petrol-900/30 text-petrol-600">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-petrol-600 dark:text-petrol-400">Reflexão Teológica</h3>
+            </div>
+            <div className="reading-text prose prose-stone dark:prose-invert max-w-none">
+              <Markdown>{devotional}</Markdown>
+            </div>
+          </motion.div>
+        ) : (
+          <div className="md:col-span-2 p-8 rounded-[2rem] bg-petrol-50/50 dark:bg-navy-800/50 border border-dashed border-petrol-200 dark:border-petrol-800 flex flex-col items-center justify-center text-center space-y-4">
+            <div className="p-4 rounded-full bg-white dark:bg-navy-900 shadow-sm">
+              <BookOpen className="w-8 h-8 text-petrol-400" />
+            </div>
+            <p className="text-sm text-petrol-600 dark:text-petrol-400 font-medium">Inicie sua meditação diária com auxílio da IA</p>
             <button 
               onClick={handleGenerateDevotional}
-              disabled={loadingDevotional}
-              className="px-4 py-2 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50"
+              className="text-xs font-bold uppercase tracking-widest text-petrol-600 hover:underline"
             >
-              {loadingDevotional ? "Gerando..." : "Devocional IA"}
+              Gerar agora
             </button>
           </div>
+        )}
+
+        {/* Quick Access Column */}
+        <div className="space-y-6">
+          <button 
+            onClick={() => onNavigate('bible')}
+            className="w-full group flex flex-col items-start p-6 rounded-[2rem] bg-white dark:bg-navy-800 border border-black/5 dark:border-white/5 shadow-lg shadow-black/5 hover:shadow-xl transition-all active:scale-[0.98]"
+          >
+            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 mb-6 group-hover:scale-110 transition-transform">
+              <Book className="w-6 h-6" />
+            </div>
+            <span className="font-display font-bold text-xl text-petrol-900 dark:text-white mb-1">Sagrada Escritura</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Continuar leitura de onde parou</span>
+          </button>
+
+          <button 
+            onClick={() => onNavigate('ai')}
+            className="w-full group flex flex-col items-start p-6 rounded-[2rem] bg-petrol-600 text-white shadow-lg shadow-petrol-900/20 hover:bg-petrol-700 transition-all active:scale-[0.98]"
+          >
+            <div className="p-4 rounded-2xl bg-white/10 text-white mb-6 group-hover:rotate-12 transition-transform">
+              <Zap className="w-6 h-6" />
+            </div>
+            <span className="font-display font-bold text-xl mb-1">Laboratório IA</span>
+            <span className="text-xs text-petrol-100/70">Análise exegética e histórica</span>
+          </button>
         </div>
       </div>
 
-      {devotional && (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm"
-        >
-          <div className="flex items-center gap-2 mb-4 text-petrol-500">
-            <Sparkles className="w-4 h-4" />
-            <h3 className="text-xs font-bold uppercase tracking-widest">Meditação do Dia</h3>
+      {/* Reading Plans Section */}
+      <section className="space-y-6">
+        <div className="flex items-center justify-between px-2">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-6 bg-petrol-500 rounded-full" />
+            <h2 className="text-2xl font-display font-bold text-petrol-900 dark:text-white tracking-tight">Jornadas de Fé</h2>
           </div>
-          <div className="prose prose-sm dark:prose-invert max-w-none">
-            <Markdown>{devotional}</Markdown>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Reading Plans */}
-      <section>
-        <div className="flex items-center justify-between mb-4 px-1">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-white">Planos de Leitura</h2>
           <button 
             onClick={() => onNavigate('reading-plans')}
-            className="text-xs font-bold text-petrol-500 uppercase tracking-wider"
+            className="flex items-center gap-2 text-xs font-bold text-petrol-500 uppercase tracking-widest hover:gap-3 transition-all"
           >
-            Ver Todos
+            Explorar Planos <ArrowRight className="w-4 h-4" />
           </button>
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4 no-scrollbar">
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {READING_PLANS.map(plan => (
-            <div key={plan.id} className="flex-shrink-0 w-64 p-5 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-2 rounded-xl bg-petrol-50 dark:bg-petrol-900/30 text-petrol-600">
+            <div 
+              key={plan.id} 
+              className="group p-6 rounded-[2rem] bg-white dark:bg-navy-800 border border-black/5 dark:border-white/5 shadow-lg shadow-black/5 hover:shadow-xl transition-all cursor-pointer"
+              onClick={() => onNavigate('reading-plans')}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="p-3 rounded-2xl bg-gray-50 dark:bg-navy-900 text-petrol-600 group-hover:bg-petrol-500 group-hover:text-white transition-colors">
                   <Calendar className="w-5 h-5" />
                 </div>
-                <span className="text-xs font-bold text-gray-400">Dia {plan.currentDay}/{plan.days}</span>
+                <div className="text-right">
+                  <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Progresso</span>
+                  <span className="text-sm font-bold text-petrol-600 dark:text-petrol-400">{plan.progress}%</span>
+                </div>
               </div>
-              <h3 className="font-bold text-gray-900 dark:text-white mb-3">{plan.title}</h3>
-              <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: 0 }}
-                  animate={{ width: `${plan.progress}%` }}
-                  className="h-full bg-petrol-500"
-                />
-              </div>
-              <div className="mt-3 flex justify-between items-center">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{plan.progress}% Concluído</span>
-                <button className="text-xs font-bold text-petrol-500">Continuar</button>
+              
+              <h3 className="font-display font-bold text-lg text-petrol-900 dark:text-white mb-4 line-clamp-1">{plan.title}</h3>
+              
+              <div className="space-y-3">
+                <div className="w-full h-1.5 bg-gray-100 dark:bg-navy-900 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${plan.progress}%` }}
+                    className="h-full bg-petrol-500 rounded-full"
+                  />
+                </div>
+                <div className="flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  <span>Dia {plan.currentDay} de {plan.days}</span>
+                  <span className="text-petrol-500 group-hover:translate-x-1 transition-transform">Continuar →</span>
+                </div>
               </div>
             </div>
           ))}
         </div>
       </section>
-
-      {/* Quick Actions Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        <button 
-          onClick={() => onNavigate('bible')}
-          className="flex flex-col items-start p-5 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm active:scale-95 transition-all"
-        >
-          <div className="p-3 rounded-2xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 mb-4">
-            <Book className="w-6 h-6" />
-          </div>
-          <span className="font-bold text-gray-900 dark:text-white">Bíblia</span>
-          <span className="text-xs text-gray-500">Leitura diária</span>
-        </button>
-        <button 
-          onClick={() => onNavigate('ai')}
-          className="flex flex-col items-start p-5 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm active:scale-95 transition-all"
-        >
-          <div className="p-3 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 mb-4">
-            <Sparkles className="w-6 h-6" />
-          </div>
-          <span className="font-bold text-gray-900 dark:text-white">Estudo IA</span>
-          <span className="text-xs text-gray-500">Análise profunda</span>
-        </button>
-      </div>
     </div>
   );
 };
@@ -691,22 +745,22 @@ const BibleScreen = ({ onAddNote, user, onReferenceChange }: { onAddNote: (ref: 
           title={`${book.name} ${chapter}`} 
           actions={
             <div className="flex items-center gap-1">
-              <button onClick={() => setShowSearch(!showSearch)} className="p-2 rounded-full active:bg-gray-200 dark:active:bg-gray-800">
+              <button onClick={() => setShowSearch(!showSearch)} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-all">
                 <Search className="w-5 h-5" />
               </button>
-              <button onClick={handleShare} className="p-2 rounded-full active:bg-gray-200 dark:active:bg-gray-800">
+              <button onClick={handleShare} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-all">
                 <Share2 className="w-5 h-5" />
               </button>
-              <button onClick={toggleAudio} className="p-2 rounded-full active:bg-gray-200 dark:active:bg-gray-800">
+              <button onClick={toggleAudio} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-all">
                 {isReading ? <VolumeX className="w-5 h-5 text-petrol-500" /> : <Volume2 className="w-5 h-5" />}
               </button>
-              <button onClick={() => setIsFocusMode(true)} className="p-2 rounded-full active:bg-gray-200 dark:active:bg-gray-800">
+              <button onClick={() => setIsFocusMode(true)} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-all">
                 <Maximize2 className="w-5 h-5" />
               </button>
-              <button onClick={() => setShowNoteModal(true)} className="p-2 rounded-full active:bg-gray-200 dark:active:bg-gray-800">
+              <button onClick={() => setShowNoteModal(true)} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-all">
                 <Bookmark className="w-5 h-5" />
               </button>
-              <button onClick={() => setShowSelector(true)} className="p-2 rounded-full active:bg-gray-200 dark:active:bg-gray-800">
+              <button onClick={() => setShowSelector(true)} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-all">
                 <Menu className="w-5 h-5" />
               </button>
             </div>
@@ -717,221 +771,238 @@ const BibleScreen = ({ onAddNote, user, onReferenceChange }: { onAddNote: (ref: 
       {isFocusMode && (
         <button 
           onClick={() => setIsFocusMode(false)}
-          className="fixed top-6 right-6 z-50 p-3 rounded-full bg-black/5 dark:bg-white/5 backdrop-blur-md"
+          className="fixed top-8 right-8 z-50 p-4 rounded-full bg-black/5 dark:bg-white/5 backdrop-blur-xl border border-white/10 hover:bg-black/10 transition-all active:scale-90"
         >
-          <Minimize2 className="w-5 h-5" />
+          <Minimize2 className="w-6 h-6" />
         </button>
       )}
 
       {!isFocusMode && showSearch && (
-        <div className="p-4 bg-white dark:bg-navy-900 border-b border-gray-100 dark:border-gray-800 animate-slide-down">
-          <div className="relative">
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-6 bg-white dark:bg-navy-900 border-b border-black/5 dark:border-white/5"
+        >
+          <div className="relative max-w-2xl mx-auto">
             <input 
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               placeholder="Pesquisar na Bíblia (ex: Amor, Fé, João 3)..."
-              className="w-full pl-12 pr-4 py-4 rounded-2xl bg-gray-50 dark:bg-navy-800 border-none focus:ring-2 focus:ring-petrol-500 text-sm"
+              className="w-full pl-14 pr-6 py-5 rounded-[2rem] bg-gray-50 dark:bg-navy-800 border-none focus:ring-2 focus:ring-petrol-500 text-base shadow-inner"
             />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" />
             {isSearching && (
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-petrol-500/30 border-t-petrol-500 rounded-full animate-spin" />
+              <div className="absolute right-5 top-1/2 -translate-y-1/2 w-5 h-5 border-2 border-petrol-500/30 border-t-petrol-500 rounded-full animate-spin" />
             )}
           </div>
           
           {searchResults.length > 0 && (
-            <div className="mt-4 space-y-2 max-h-60 overflow-y-auto">
+            <div className="mt-6 space-y-3 max-h-80 overflow-y-auto px-2">
               {searchResults.map((res, i) => (
                 <button 
                   key={i}
                   onClick={() => selectReference(res.reference)}
-                  className="w-full text-left p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border border-transparent hover:border-gray-100 dark:hover:border-gray-700"
+                  className="w-full text-left p-5 rounded-2xl bg-gray-50/50 dark:bg-navy-800/50 hover:bg-petrol-50 dark:hover:bg-petrol-900/20 transition-all group"
                 >
-                  <span className="text-xs font-bold text-petrol-500 block mb-1">{res.reference}</span>
-                  <p className="text-xs text-gray-500 line-clamp-1 italic">"{res.excerpt}"</p>
+                  <div className="font-display font-bold text-petrol-600 dark:text-petrol-400 mb-1 group-hover:translate-x-1 transition-transform">{res.reference}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 italic">"{res.excerpt}"</div>
                 </button>
               ))}
             </div>
           )}
-        </div>
+        </motion.div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-6 pb-32" onMouseUp={handleSelection} onTouchEnd={handleSelection}>
-        <div className={cn("max-w-2xl mx-auto space-y-8", isFocusMode && "pt-12")}>
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 space-y-4">
-              <div className="w-8 h-8 border-4 border-petrol-500/30 border-t-petrol-500 rounded-full animate-spin" />
-              <p className="text-sm text-gray-400 font-medium">Abrindo as Escrituras...</p>
+      <div 
+        className={cn(
+          "flex-1 overflow-y-auto px-6 py-10 md:px-12 md:py-16 transition-all duration-700",
+          isFocusMode ? "max-w-3xl mx-auto" : "max-w-4xl mx-auto"
+        )}
+        onMouseUp={handleSelection}
+        onTouchEnd={handleSelection}
+      >
+        {loading ? (
+          <div className="flex flex-col items-center justify-center h-full space-y-4 opacity-50">
+            <div className="w-12 h-12 border-4 border-petrol-500/20 border-t-petrol-500 rounded-full animate-spin" />
+            <p className="text-xs font-bold uppercase tracking-widest text-petrol-500">Sondando as Escrituras...</p>
+          </div>
+        ) : content ? (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-16 pb-32"
+          >
+            {/* Chapter Header */}
+            <div className="text-center space-y-6 mb-20">
+              <motion.span 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="inline-block px-4 py-1.5 rounded-full bg-petrol-50 dark:bg-petrol-900/30 text-[10px] font-bold uppercase tracking-[0.4em] text-petrol-600 dark:text-petrol-400"
+              >
+                Capítulo {chapter}
+              </motion.span>
+              <motion.h2 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="text-6xl md:text-8xl font-display font-bold text-petrol-900 dark:text-white tracking-tighter leading-none"
+              >
+                {book.name}
+              </motion.h2>
+              <motion.div 
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ delay: 0.3, duration: 0.8 }}
+                className="w-24 h-1 bg-gold-500 mx-auto rounded-full" 
+              />
             </div>
-          ) : content ? (
-            <div className="space-y-8">
-              <AnimatePresence>
-                {selection.text && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-white dark:bg-navy-800 rounded-full shadow-2xl border border-gray-100 dark:border-gray-700 p-2 flex items-center gap-2"
+
+            {/* Bible Text */}
+            <div className="reading-text prose prose-stone dark:prose-invert max-w-none first-letter:text-8xl first-letter:font-display first-letter:font-bold first-letter:mr-4 first-letter:float-left first-letter:text-petrol-600 dark:first-letter:text-gold-500 first-letter:leading-none">
+              <Markdown>{content.text}</Markdown>
+            </div>
+            {/* Selection Tools - Floating Glass */}
+            <AnimatePresence>
+              {selection.text && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 20, x: '-50%' }}
+                  animate={{ opacity: 1, y: 0, x: '-50%' }}
+                  exit={{ opacity: 0, y: 20, x: '-50%' }}
+                  className="fixed bottom-32 left-1/2 z-50 glass-card rounded-full p-2 flex items-center gap-2 shadow-2xl border border-white/20 dark:border-white/10"
+                >
+                  <div className="flex gap-1.5 px-3 border-r border-black/5 dark:border-white/10">
+                    {['#fef08a', '#bbf7d0', '#bfdbfe', '#fecaca'].map(color => (
+                      <button 
+                        key={color}
+                        onClick={() => addHighlight(color)}
+                        className="w-8 h-8 rounded-full border border-black/5 dark:border-white/10 active:scale-90 transition-transform shadow-inner"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                  <button 
+                    onClick={() => {
+                      onAddNote(`${book.name} ${chapter}`, `Ref: ${selection.text}\n\n`);
+                      setShowNoteModal(true);
+                    }}
+                    className="p-3 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-gray-600 dark:text-gray-300 transition-colors"
                   >
-                    <div className="flex gap-1 px-2 border-r border-gray-100 dark:border-gray-700">
-                      {['#fef08a', '#bbf7d0', '#bfdbfe', '#fecaca'].map(color => (
-                        <button 
-                          key={color}
-                          onClick={() => addHighlight(color)}
-                          className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-600 active:scale-90 transition-transform"
-                          style={{ backgroundColor: color }}
-                        />
-                      ))}
+                    <Bookmark className="w-5 h-5" />
+                  </button>
+                  <button 
+                    onClick={() => setSelection({ text: '', range: null })}
+                    className="p-3 rounded-full hover:bg-black/5 dark:hover:bg-white/5 text-gray-400 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* AI Insights Section - Bento Style */}
+            {!isFocusMode && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-24">
+                {content.summary && (
+                  <motion.div 
+                    whileHover={{ y: -5 }}
+                    className="p-8 rounded-[2.5rem] bg-white dark:bg-navy-800 border border-black/5 dark:border-white/5 shadow-xl"
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 rounded-xl bg-petrol-50 dark:bg-petrol-900/30 text-petrol-600">
+                        <Sparkles className="w-5 h-5" />
+                      </div>
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-petrol-600 dark:text-petrol-400">Resumo Teológico</h4>
                     </div>
-                    <button 
-                      onClick={() => {
-                        onAddNote(`${book.name} ${chapter}`, `Ref: ${selection.text}\n\n`);
-                        setShowNoteModal(true);
-                      }}
-                      className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
-                    >
-                      <Bookmark className="w-5 h-5" />
-                    </button>
-                    <button 
-                      onClick={() => setSelection({ text: '', range: null })}
-                      className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed font-medium">{content.summary}</p>
                   </motion.div>
                 )}
-              </AnimatePresence>
 
-              <div className="prose prose-slate dark:prose-invert max-w-none reading-text leading-loose text-lg">
-                <Markdown>{content.text}</Markdown>
+                {content.context && (
+                  <motion.div 
+                    whileHover={{ y: -5 }}
+                    className="p-8 rounded-[2.5rem] bg-white dark:bg-navy-800 border border-black/5 dark:border-white/5 shadow-xl"
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600">
+                        <History className="w-5 h-5" />
+                      </div>
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">Contexto Histórico</h4>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed font-medium">{content.context}</p>
+                  </motion.div>
+                )}
+
+                {content.crossReferences && content.crossReferences.length > 0 && (
+                  <motion.div 
+                    whileHover={{ y: -5 }}
+                    className="md:col-span-2 p-8 rounded-[2.5rem] bg-white dark:bg-navy-800 border border-black/5 dark:border-white/5 shadow-xl"
+                  >
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600">
+                        <Layers className="w-5 h-5" />
+                      </div>
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Referências Cruzadas</h4>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {content.crossReferences.map(ref => (
+                        <button key={ref} className="px-5 py-2.5 rounded-2xl bg-gray-50 dark:bg-navy-900 text-xs font-bold text-gray-600 dark:text-gray-400 hover:bg-petrol-50 dark:hover:bg-petrol-900/30 hover:text-petrol-600 transition-all border border-transparent hover:border-petrol-200">
+                          {ref}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
               </div>
+            )}
 
-              {!isFocusMode && (
-                <div className="space-y-6 pt-8 border-t border-gray-200 dark:border-gray-800">
-                  {content.summary && (
-                    <div className="p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-petrol-500 mb-3 flex items-center gap-2">
-                        <Sparkles className="w-4 h-4" /> Resumo Teológico
-                      </h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{content.summary}</p>
-                    </div>
-                  )}
-
-                  {content.context && (
-                    <div className="p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-amber-500 mb-3 flex items-center gap-2">
-                        <History className="w-4 h-4" /> Contexto Histórico
-                      </h4>
-                      <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{content.context}</p>
-                    </div>
-                  )}
-
-                  {content.crossReferences && content.crossReferences.length > 0 && (
-                    <div className="p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-500 mb-3 flex items-center gap-2">
-                        <Layers className="w-4 h-4" /> Referências Cruzadas
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {content.crossReferences.map(ref => (
-                          <button key={ref} className="px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-navy-900 text-xs font-bold text-gray-600 dark:text-gray-400">
-                            {ref}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <button 
-                      onClick={handleAnalysis}
-                      disabled={loadingAnalysis}
-                      className="py-4 rounded-2xl bg-petrol-500 text-white font-bold shadow-lg shadow-petrol-500/30 active:scale-[0.98] transition-all disabled:opacity-50 text-sm"
-                    >
-                      {loadingAnalysis ? "..." : "Análise Reformada"}
-                    </button>
-                    <button 
-                      onClick={handleSermonOutline}
-                      disabled={loadingSermon}
-                      className="py-4 rounded-2xl bg-navy-800 text-white font-bold shadow-lg shadow-navy-900/30 active:scale-[0.98] transition-all disabled:opacity-50 text-sm"
-                    >
-                      {loadingSermon ? "..." : "Esboço de Sermão"}
-                    </button>
-                  </div>
-
-                  <div className="p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm space-y-4">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-gold-500 flex items-center gap-2">
-                      <Search className="w-4 h-4" /> Estudo de Palavras
-                    </h4>
-                    <div className="flex gap-2">
-                      <input 
-                        type="text"
-                        value={selectedWord}
-                        onChange={(e) => setSelectedWord(e.target.value)}
-                        placeholder="Digite uma palavra..."
-                        className="flex-1 px-4 py-2 rounded-xl bg-gray-50 dark:bg-navy-900 border-none text-sm"
-                      />
-                      <button 
-                        onClick={handleWordStudy}
-                        disabled={loadingWordStudy}
-                        className="px-4 py-2 rounded-xl bg-petrol-500 text-white font-bold text-xs disabled:opacity-50"
-                      >
-                        {loadingWordStudy ? "..." : "Estudar"}
-                      </button>
-                    </div>
-                  </div>
-
-                  {analysis && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-6 rounded-3xl bg-petrol-50 dark:bg-petrol-900/20 border border-petrol-100 dark:border-petrol-800"
-                    >
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
-                        <Markdown>{analysis}</Markdown>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {sermonOutline && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-6 rounded-3xl bg-navy-50 dark:bg-navy-900/40 border border-navy-100 dark:border-navy-800"
-                    >
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
-                        <Markdown>{sermonOutline}</Markdown>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {wordStudy && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="p-6 rounded-3xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30"
-                    >
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
-                        <Markdown>{wordStudy}</Markdown>
-                      </div>
-                    </motion.div>
-                  )}
+            {/* AI Tools Bar - Floating style */}
+            {!isFocusMode && (
+              <div className="sticky bottom-10 left-0 right-0 flex justify-center pointer-events-none z-40">
+                <div className="pointer-events-auto flex items-center gap-2 p-2 rounded-full bg-white/80 dark:bg-navy-900/80 backdrop-blur-xl border border-black/5 dark:border-white/5 shadow-2xl">
+                  <button 
+                    onClick={handleAnalysis}
+                    disabled={loadingAnalysis}
+                    className="flex items-center gap-2 px-6 py-3.5 rounded-full bg-petrol-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-petrol-700 transition-all disabled:opacity-50 shadow-lg shadow-petrol-600/20"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    {loadingAnalysis ? "Analisando..." : "Exegese IA"}
+                  </button>
+                  <button 
+                    onClick={() => setShowAIModal(true)}
+                    className="p-3.5 rounded-full bg-gray-100 dark:bg-navy-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-navy-700 transition-all"
+                  >
+                    <Zap className="w-5 h-5" />
+                  </button>
                 </div>
-              )}
-            </div>
-          ) : null}
-        </div>
-      </div>
+              </div>
+            )}
 
-      {/* Floating AI Button */}
-      <motion.button 
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        onClick={() => setShowAIModal(true)}
-        className="fixed bottom-24 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 text-white shadow-2xl flex items-center justify-center border-4 border-white dark:border-navy-900"
-      >
-        <Sparkles className="w-6 h-6" />
-      </motion.button>
+            {analysis && (
+              <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-20 p-8 md:p-12 rounded-[3.5rem] bg-white dark:bg-navy-800 border border-black/5 dark:border-white/5 shadow-2xl relative overflow-hidden"
+              >
+                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-petrol-500 via-gold-500 to-crimson-500" />
+                <div className="flex items-center gap-4 mb-10">
+                  <div className="p-4 rounded-2xl bg-petrol-50 dark:bg-petrol-900/30 text-petrol-600">
+                    <BookOpen className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold uppercase tracking-[0.3em] text-petrol-600 dark:text-petrol-400">Análise Teológica Profunda</h3>
+                    <p className="text-xs text-gray-400 font-medium mt-1">Perspectiva Reformada & Histórica</p>
+                  </div>
+                </div>
+                <div className="reading-text prose prose-stone dark:prose-invert max-w-none">
+                  <Markdown>{analysis}</Markdown>
+                </div>
+              </motion.div>
+            )}
+          </motion.div>
+        ) : null}
+      </div>
 
       {/* AI Analysis Modal */}
       <AnimatePresence>
@@ -1200,74 +1271,95 @@ const LibraryScreen = ({ notes, user }: { notes: Note[], user: FirebaseUser | nu
   };
 
   return (
-    <div className="p-4 space-y-6 pb-24 animate-fade-in">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-petrol-900 dark:text-white">Minha Biblioteca</h2>
-        <p className="text-sm text-gray-500">Suas notas, destaques e meditações.</p>
-      </div>
+    <div className="p-6 space-y-8 pb-32 animate-fade-in max-w-2xl mx-auto">
+      <header className="space-y-2">
+        <h2 className="text-4xl font-serif italic text-petrol-900 dark:text-white tracking-tight">Minha Biblioteca</h2>
+        <p className="text-sm text-gray-500 font-medium uppercase tracking-widest opacity-70">Suas notas, destaques e meditações.</p>
+      </header>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center mb-4">
-            <Bookmark className="w-5 h-5" />
+        <div className="p-6 rounded-[32px] bg-white dark:bg-gray-800 border border-black/5 dark:border-white/5 shadow-sm hover:shadow-md transition-all">
+          <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 flex items-center justify-center mb-4">
+            <Bookmark className="w-6 h-6" />
           </div>
-          <span className="text-2xl font-bold block">{notes.length}</span>
-          <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Notas</span>
+          <span className="text-3xl font-serif font-bold block text-gray-900 dark:text-white">{notes.length}</span>
+          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Notas Salvas</span>
         </div>
-        <div className="p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center mb-4">
-            <Highlighter className="w-5 h-5" />
+        <div className="p-6 rounded-[32px] bg-white dark:bg-gray-800 border border-black/5 dark:border-white/5 shadow-sm hover:shadow-md transition-all">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center mb-4">
+            <Highlighter className="w-6 h-6" />
           </div>
-          <span className="text-2xl font-bold block">{highlights.length}</span>
-          <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Destaques</span>
+          <span className="text-3xl font-serif font-bold block text-gray-900 dark:text-white">{highlights.length}</span>
+          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Destaques</span>
         </div>
       </div>
 
-      <section className="space-y-4">
-        <h3 className="font-bold px-1">Notas Recentes</h3>
+      <section className="space-y-6">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="font-serif text-xl text-gray-900 dark:text-white">Notas Recentes</h3>
+          <span className="text-[10px] font-bold text-petrol-500 uppercase tracking-widest">Ver Todas</span>
+        </div>
+        
         {notes.length === 0 ? (
-          <div className="p-12 text-center space-y-4 bg-white dark:bg-gray-800 rounded-[32px] border border-dashed border-gray-200 dark:border-gray-700">
-            <Library className="w-12 h-12 text-gray-200 mx-auto" />
-            <p className="text-sm text-gray-400">Nenhuma nota salva ainda.</p>
+          <div className="p-16 text-center space-y-4 bg-white/50 dark:bg-gray-800/50 rounded-[40px] border border-dashed border-gray-200 dark:border-gray-700">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto opacity-50">
+              <Library className="w-8 h-8 text-gray-400" />
+            </div>
+            <p className="text-sm text-gray-400 font-medium">Nenhuma nota salva ainda.</p>
           </div>
         ) : (
           <div className="space-y-4">
             {notes.map(note => (
-              <div key={note.id} className="p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm group">
-                <div className="flex justify-between items-start mb-2">
-                  <h4 className="font-bold text-sm text-petrol-500">{note.reference}</h4>
-                  <div className="flex gap-2">
-                    <span className="text-[10px] text-gray-400">{new Date(note.date).toLocaleDateString()}</span>
-                    <button 
-                      onClick={() => deleteNote(note.id)}
-                      className="opacity-0 group-hover:opacity-100 p-1 text-red-400 hover:bg-red-50 rounded-md transition-all"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
+              <motion.div 
+                layout
+                key={note.id} 
+                className="p-6 rounded-[32px] bg-white dark:bg-gray-800 border border-black/5 dark:border-white/5 shadow-sm group relative overflow-hidden"
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div className="space-y-1">
+                    <h4 className="font-serif text-lg text-petrol-600 dark:text-petrol-400">{note.reference}</h4>
+                    <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
+                      {new Date(note.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                    </span>
                   </div>
+                  <button 
+                    onClick={() => deleteNote(note.id)}
+                    className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-                <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed">
-                  {note.content}
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed font-serif italic opacity-90">
+                  "{note.content}"
                 </p>
-              </div>
+                <div className="absolute top-0 right-0 w-24 h-24 bg-petrol-500/5 rounded-full -mr-12 -mt-12 blur-2xl pointer-events-none" />
+              </motion.div>
             ))}
           </div>
         )}
       </section>
 
-      <section className="space-y-4">
-        <h3 className="font-bold px-1">Destaques</h3>
+      <section className="space-y-6">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="font-serif text-xl text-gray-900 dark:text-white">Destaques</h3>
+        </div>
+
         {highlights.length === 0 ? (
-          <div className="p-12 text-center space-y-4 bg-white dark:bg-gray-800 rounded-[32px] border border-dashed border-gray-200 dark:border-gray-700">
-            <Highlighter className="w-12 h-12 text-gray-200 mx-auto" />
-            <p className="text-sm text-gray-400">Nenhum destaque salvo ainda.</p>
+          <div className="p-16 text-center space-y-4 bg-white/50 dark:bg-gray-800/50 rounded-[40px] border border-dashed border-gray-200 dark:border-gray-700">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto opacity-50">
+              <Highlighter className="w-8 h-8 text-gray-400" />
+            </div>
+            <p className="text-sm text-gray-400 font-medium">Nenhum destaque salvo ainda.</p>
           </div>
         ) : (
           <div className="space-y-4">
             {highlights.map(h => (
-              <div key={h.id} className="p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">{h.reference}</span>
-                <p className="text-sm leading-relaxed border-l-4 pl-3" style={{ borderColor: h.color }}>
+              <div key={h.id} className="p-6 rounded-[32px] bg-white dark:bg-gray-800 border border-black/5 dark:border-white/5 shadow-sm">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-1 h-4 rounded-full" style={{ backgroundColor: h.color }} />
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{h.reference}</span>
+                </div>
+                <p className="text-base leading-relaxed font-serif text-gray-800 dark:text-gray-200 italic">
                   {h.text}
                 </p>
               </div>
@@ -1311,56 +1403,74 @@ const AIIntelligenceCenter = ({ currentReference }: { currentReference?: string 
   };
 
   const labTools = [
-    { title: 'Exegese Automática', icon: <BookOpen />, prompt: 'Faça uma exegese detalhada do capítulo atual, focando no contexto original e teologia.' },
-    { title: 'Dicionário Teológico', icon: <Type />, prompt: 'Explique os principais termos teológicos encontrados no capítulo atual.' },
-    { title: 'Harmonia Bíblica', icon: <Layers />, prompt: 'Como este texto se harmoniza com o restante das Escrituras e a Aliança da Graça?' },
-    { title: 'Aplicação Pastoral', icon: <MessageSquare />, prompt: 'Quais são as aplicações práticas e pastorais deste texto para a igreja hoje?' },
+    { title: 'Exegese Automática', icon: <BookOpen className="w-5 h-5" />, prompt: 'Faça uma exegese detalhada do capítulo atual, focando no contexto original e teologia.' },
+    { title: 'Dicionário Teológico', icon: <Type className="w-5 h-5" />, prompt: 'Explique os principais termos teológicos encontrados no capítulo atual.' },
+    { title: 'Harmonia Bíblica', icon: <Layers className="w-5 h-5" />, prompt: 'Como este texto se harmoniza com o restante das Escrituras e a Aliança da Graça?' },
+    { title: 'Aplicação Pastoral', icon: <MessageSquare className="w-5 h-5" />, prompt: 'Quais são as aplicações práticas e pastorais deste texto para a igreja hoje?' },
+  ];
+
+  const modes = [
+    { id: 'chat', label: 'Chat Teológico', icon: <MessageCircle className="w-4 h-4" /> },
+    { id: 'lab', label: 'Laboratório IA', icon: <FlaskConical className="w-4 h-4" /> },
+    { id: 'knowledge', label: 'Cérebro Reformado', icon: <BrainCircuit className="w-4 h-4" /> },
+    { id: 'dictionary', label: 'Dicionário', icon: <Book className="w-4 h-4" /> },
   ];
 
   return (
-    <div className="p-4 space-y-6 pb-24 animate-fade-in">
-      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {['chat', 'lab', 'knowledge', 'dictionary'].map((m) => (
+    <div className="p-6 space-y-8 pb-32 animate-fade-in max-w-2xl mx-auto">
+      <header className="space-y-2">
+        <h2 className="text-4xl font-serif italic text-petrol-900 dark:text-white tracking-tight">Centro de Inteligência</h2>
+        <p className="text-sm text-gray-500 font-medium uppercase tracking-widest opacity-70">Exegese e Teologia Reformada assistida por IA.</p>
+      </header>
+
+      <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide -mx-6 px-6">
+        {modes.map((m) => (
           <button 
-            key={m}
-            onClick={() => setMode(m as any)}
+            key={m.id}
+            onClick={() => setMode(m.id as any)}
             className={cn(
-              "px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all", 
-              mode === m ? "bg-petrol-500 text-white" : "bg-white dark:bg-gray-800 text-gray-500"
+              "flex items-center gap-2 px-5 py-3 rounded-full text-xs font-bold whitespace-nowrap transition-all border", 
+              mode === m.id 
+                ? "bg-petrol-600 text-white border-petrol-600 shadow-lg shadow-petrol-600/20" 
+                : "bg-white dark:bg-gray-800 text-gray-500 border-black/5 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-gray-700"
             )}
           >
-            {m === 'chat' ? 'Chat Teológico' : m === 'lab' ? 'Laboratório IA' : m === 'knowledge' ? 'Cérebro Reformado' : 'Dicionário'}
+            {m.icon}
+            {m.label}
           </button>
         ))}
       </div>
 
       {mode === 'chat' && (
-        <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-lg bg-petrol-500/10 text-petrol-500">
-              <Sparkles className="w-5 h-5" />
+        <div className="bg-white dark:bg-gray-800 rounded-[40px] p-8 shadow-sm border border-black/5 dark:border-white/5 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-petrol-500/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none group-hover:bg-petrol-500/10 transition-all duration-700" />
+          
+          <div className="flex items-center gap-4 mb-8">
+            <div className="p-3 rounded-2xl bg-petrol-500/10 text-petrol-500">
+              <Sparkles className="w-6 h-6" />
             </div>
-            <h2 className="font-bold text-gray-900 dark:text-white">Super IA de Estudo</h2>
+            <div>
+              <h2 className="font-serif text-2xl text-gray-900 dark:text-white">Super IA de Estudo</h2>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-widest">Sola Scriptura Engine</p>
+            </div>
           </div>
-          <p className="text-sm text-gray-500 mb-6 leading-relaxed">
-            Sua inteligência interna para exegese e teologia sistemática.
-          </p>
+
           <div className="relative">
             <textarea
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={currentReference ? `Pergunte sobre ${currentReference}...` : "Ex: O que é a Predestinação?"}
-              className="w-full h-32 p-4 rounded-2xl bg-gray-50 dark:bg-navy-900 border-none focus:ring-2 focus:ring-petrol-500 text-sm resize-none dark:text-white"
+              className="w-full h-40 p-6 rounded-[32px] bg-gray-50 dark:bg-navy-900/50 border-none focus:ring-2 focus:ring-petrol-500/20 text-base font-serif italic resize-none dark:text-white placeholder:text-gray-300"
             />
             <button
               onClick={() => handleStudy()}
               disabled={loading}
-              className="absolute bottom-3 right-3 p-3 rounded-xl bg-petrol-500 text-white shadow-lg shadow-petrol-500/30 disabled:opacity-50 active:scale-90 transition-all"
+              className="absolute bottom-4 right-4 p-4 rounded-2xl bg-petrol-600 text-white shadow-xl shadow-petrol-600/30 disabled:opacity-50 active:scale-95 transition-all hover:bg-petrol-700"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <ChevronRight className="w-5 h-5" />
+                <Send className="w-6 h-6" />
               )}
             </button>
           </div>
@@ -1373,36 +1483,42 @@ const AIIntelligenceCenter = ({ currentReference }: { currentReference?: string 
             <button
               key={i}
               onClick={() => { setMode('chat'); handleStudy(tool.prompt); }}
-              className="flex items-center gap-4 p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm active:scale-[0.98] transition-all text-left"
+              className="flex items-center gap-6 p-6 rounded-[32px] bg-white dark:bg-gray-800 border border-black/5 dark:border-white/5 shadow-sm hover:shadow-md active:scale-[0.98] transition-all text-left group"
             >
-              <div className="p-3 rounded-2xl bg-petrol-50 dark:bg-petrol-900/30 text-petrol-500">
+              <div className="p-4 rounded-2xl bg-petrol-50 dark:bg-petrol-900/20 text-petrol-500 group-hover:scale-110 transition-transform">
                 {tool.icon}
               </div>
-              <div>
-                <h3 className="font-bold text-gray-900 dark:text-white">{tool.title}</h3>
-                <p className="text-xs text-gray-500">Toque para iniciar análise</p>
+              <div className="space-y-1">
+                <h3 className="font-serif text-xl text-gray-900 dark:text-white">{tool.title}</h3>
+                <p className="text-xs text-gray-400 font-medium uppercase tracking-widest">Toque para iniciar análise</p>
               </div>
+              <ChevronRight className="w-5 h-5 ml-auto text-gray-300 group-hover:text-petrol-500 transition-colors" />
             </button>
           ))}
         </div>
       )}
 
       {mode === 'knowledge' && (
-        <div className="space-y-4">
-          <div className="p-6 rounded-3xl bg-petrol-900 text-white shadow-xl">
-            <h3 className="font-bold mb-2">Base de Conhecimento Interna</h3>
-            <p className="text-xs text-petrol-200 leading-relaxed">
-              O app utiliza as Confissões de Fé e o Catecismo de Westminster como base primária para todas as respostas da IA.
+        <div className="space-y-6">
+          <div className="p-8 rounded-[40px] bg-petrol-900 text-white shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+            <h3 className="font-serif text-2xl mb-3">Base de Conhecimento</h3>
+            <p className="text-sm text-petrol-200 leading-relaxed font-serif italic opacity-80">
+              O app utiliza as Confissões de Fé e o Catecismo de Westminster como base primária para todas as respostas da IA, garantindo fidelidade à tradição reformada.
             </p>
           </div>
           <div className="grid grid-cols-1 gap-3">
             {['Sola Scriptura', 'Sola Fide', 'Sola Gratia', 'Solus Christus', 'Soli Deo Gloria'].map(sola => (
-              <div key={sola} className="p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                <span className="font-bold text-sm">{sola}</span>
-                <button onClick={() => { setMode('chat'); handleStudy(`Explique o conceito de ${sola}`); }} className="text-petrol-500">
+              <button 
+                key={sola} 
+                onClick={() => { setMode('chat'); handleStudy(`Explique o conceito de ${sola}`); }}
+                className="p-5 rounded-[24px] bg-white dark:bg-gray-800 border border-black/5 dark:border-white/5 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-all group"
+              >
+                <span className="font-serif text-lg text-gray-800 dark:text-gray-200">{sola}</span>
+                <div className="w-8 h-8 rounded-full bg-petrol-50 dark:bg-petrol-900/20 flex items-center justify-center text-petrol-500 group-hover:translate-x-1 transition-transform">
                   <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
+                </div>
+              </button>
             ))}
           </div>
         </div>
@@ -1411,14 +1527,14 @@ const AIIntelligenceCenter = ({ currentReference }: { currentReference?: string 
       {mode === 'dictionary' && (
         <div className="space-y-4">
           {THEOLOGICAL_DICTIONARY.map((item) => (
-            <div key={item.term} className="p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
-              <h3 className="font-bold text-petrol-500 mb-2">{item.term}</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">{item.definition}</p>
+            <div key={item.term} className="p-8 rounded-[40px] bg-white dark:bg-gray-800 border border-black/5 dark:border-white/5 shadow-sm group">
+              <h3 className="font-serif text-2xl text-petrol-600 dark:text-petrol-400 mb-3">{item.term}</h3>
+              <p className="text-base text-gray-600 dark:text-gray-400 leading-relaxed font-serif italic">{item.definition}</p>
               <button 
                 onClick={() => { setMode('chat'); handleStudy(`Aprofunde o estudo sobre ${item.term} na perspectiva reformada.`); }}
-                className="mt-4 text-xs font-bold text-petrol-500 flex items-center gap-1"
+                className="mt-6 text-xs font-bold text-petrol-500 flex items-center gap-2 uppercase tracking-[0.2em] hover:gap-3 transition-all"
               >
-                Aprofundar com IA <ChevronRight className="w-3 h-3" />
+                Aprofundar com IA <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           ))}
@@ -1429,9 +1545,10 @@ const AIIntelligenceCenter = ({ currentReference }: { currentReference?: string 
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700"
+          className="bg-white dark:bg-gray-800 rounded-[40px] p-8 shadow-sm border border-black/5 dark:border-white/5 relative"
         >
-          <div className="prose prose-sm dark:prose-invert max-w-none reading-text">
+          <div className="absolute top-6 right-8 text-[10px] font-bold text-petrol-500 uppercase tracking-widest">Resposta da IA</div>
+          <div className="prose prose-sm dark:prose-invert max-w-none reading-text pt-4">
             <Markdown>{response}</Markdown>
           </div>
           <div ref={scrollRef} />
@@ -1461,31 +1578,44 @@ const ConfessionsScreen = () => {
     };
 
     return (
-      <div className="animate-fade-in-right h-full flex flex-col">
+      <div className="animate-fade-in-right h-full flex flex-col bg-paper-50 dark:bg-navy-900">
         <Header title={selected.title} showBack onBack={() => { setSelected(null); setStudyResponse(null); }} />
-        <div className="flex-1 overflow-y-auto p-6 pb-24 bg-paper-50 dark:bg-navy-900">
-          <div className="max-w-2xl mx-auto space-y-8">
-            <div className="prose prose-slate dark:prose-invert reading-text">
+        <div className="flex-1 overflow-y-auto p-8 md:p-12 pb-32">
+          <div className="max-w-3xl mx-auto space-y-12">
+            <div className="text-center space-y-4 mb-16">
+              <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-petrol-600 dark:text-petrol-400">Documento Histórico</span>
+              <h2 className="text-4xl md:text-6xl font-display font-bold text-petrol-900 dark:text-white tracking-tight leading-tight">{selected.title}</h2>
+              <div className="w-16 h-1 bg-gold-500 mx-auto rounded-full" />
+            </div>
+
+            <div className="reading-text prose prose-stone dark:prose-invert max-w-none first-letter:text-7xl first-letter:font-display first-letter:font-bold first-letter:mr-3 first-letter:float-left first-letter:text-petrol-600 dark:first-letter:text-gold-500">
               <Markdown>{selected.content}</Markdown>
             </div>
             
-            <div className="pt-8 border-t border-gray-200 dark:border-gray-800">
+            <div className="pt-12 border-t border-black/5 dark:border-white/5">
               <button 
                 onClick={handleStudyConfession}
                 disabled={loadingStudy}
-                className="w-full py-4 rounded-2xl bg-petrol-500 text-white font-bold shadow-lg shadow-petrol-500/30 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-5 rounded-3xl bg-petrol-600 text-white font-bold shadow-xl shadow-petrol-600/20 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3 uppercase text-xs tracking-widest"
               >
                 <Sparkles className="w-5 h-5" />
-                {loadingStudy ? "Analisando..." : "Estudar com IA"}
+                {loadingStudy ? "Analisando..." : "Exegese IA"}
               </button>
 
               {studyResponse && (
                 <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-6 p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm"
+                  className="mt-10 p-8 md:p-10 rounded-[3rem] bg-white dark:bg-navy-800 border border-black/5 dark:border-white/5 shadow-2xl relative overflow-hidden"
                 >
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <div className="absolute top-0 left-0 w-full h-1.5 bg-gold-500" />
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="p-2.5 rounded-xl bg-gold-50 dark:bg-gold-900/20 text-gold-600">
+                      <BookOpen className="w-5 h-5" />
+                    </div>
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-gold-600 dark:text-gold-400">Comentário Teológico</h4>
+                  </div>
+                  <div className="reading-text prose prose-sm dark:prose-invert max-w-none leading-relaxed">
                     <Markdown>{studyResponse}</Markdown>
                   </div>
                 </motion.div>
@@ -1498,28 +1628,33 @@ const ConfessionsScreen = () => {
   }
 
   return (
-    <div className="p-4 space-y-4 pb-24 animate-fade-in">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-petrol-900 dark:text-white">Símbolos de Fé</h2>
-        <p className="text-sm text-gray-500">Documentos históricos da tradição reformada.</p>
+    <div className="p-8 space-y-8 pb-32 animate-fade-in max-w-5xl mx-auto">
+      <div className="mb-10 space-y-2">
+        <h2 className="text-4xl md:text-5xl font-display font-bold text-petrol-900 dark:text-white tracking-tight">Símbolos de Fé</h2>
+        <p className="text-sm text-gray-500 font-medium tracking-wide">Documentos históricos da tradição reformada e cristã.</p>
       </div>
       
-      {CONFESSIONS.map(c => (
-        <button
-          key={c.id}
-          onClick={() => setSelected(c)}
-          className="w-full flex flex-col items-start p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm active:scale-[0.98] transition-all text-left"
-        >
-          <div className="flex justify-between w-full mb-2">
-            <span className="text-xs font-bold text-petrol-500 bg-petrol-50 dark:bg-petrol-900/30 px-2 py-1 rounded-md">
-              {c.year}
-            </span>
-            <ChevronRight className="w-5 h-5 text-gray-300" />
-          </div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{c.title}</h3>
-          <p className="text-sm text-gray-500 leading-relaxed">{c.description}</p>
-        </button>
-      ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {CONFESSIONS.map(c => (
+          <motion.button
+            key={c.id}
+            whileHover={{ y: -5 }}
+            onClick={() => setSelected(c)}
+            className="w-full flex flex-col items-start p-8 rounded-[2.5rem] bg-white dark:bg-navy-800 border border-black/5 dark:border-white/5 shadow-xl hover:shadow-2xl transition-all text-left relative overflow-hidden group"
+          >
+            <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
+              <ChevronRight className="w-6 h-6 text-petrol-500" />
+            </div>
+            <div className="flex justify-between w-full mb-6">
+              <span className="text-[10px] font-bold text-petrol-600 bg-petrol-50 dark:bg-petrol-900/30 px-3 py-1.5 rounded-full uppercase tracking-widest">
+                {c.year}
+              </span>
+            </div>
+            <h3 className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-3 tracking-tight">{c.title}</h3>
+            <p className="text-sm text-gray-500 leading-relaxed font-medium line-clamp-3">{c.description}</p>
+          </motion.button>
+        ))}
+      </div>
     </div>
   );
 };
@@ -1535,78 +1670,104 @@ const SettingsScreen = ({ user, onSignOut, onSignIn }: { user: FirebaseUser | nu
   };
 
   return (
-    <div className="p-4 space-y-6 pb-24 animate-fade-in">
+    <div className="p-6 space-y-8 pb-32 animate-fade-in max-w-2xl mx-auto">
+      <header className="space-y-2">
+        <h2 className="text-4xl font-serif italic text-petrol-900 dark:text-white tracking-tight">Configurações</h2>
+        <p className="text-sm text-gray-500 font-medium uppercase tracking-widest opacity-70">Personalize sua experiência de estudo.</p>
+      </header>
+
       {/* Profile Section */}
-      <section className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="font-bold mb-6 flex items-center gap-2">
-          <HomeIcon className="w-5 h-5 text-petrol-500" />
-          Perfil
-        </h3>
+      <section className="bg-white dark:bg-gray-800 rounded-[40px] p-8 shadow-sm border border-black/5 dark:border-white/5 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-petrol-500/5 rounded-full -mr-32 -mt-32 blur-3xl pointer-events-none group-hover:bg-petrol-500/10 transition-all duration-700" />
+        
+        <div className="flex items-center gap-3 mb-8">
+          <div className="p-2 rounded-xl bg-petrol-500/10 text-petrol-500">
+            <User className="w-5 h-5" />
+          </div>
+          <h3 className="font-serif text-xl text-gray-900 dark:text-white">Perfil</h3>
+        </div>
         
         {user ? (
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <img 
-                src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}`} 
-                alt="Profile" 
-                className="w-12 h-12 rounded-full border-2 border-petrol-500"
-                referrerPolicy="no-referrer"
-              />
-              <div>
-                <p className="font-bold text-gray-900 dark:text-white">{user.displayName}</p>
-                <p className="text-xs text-gray-500">{user.email}</p>
+            <div className="flex items-center gap-5">
+              <div className="relative">
+                <img 
+                  src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}`} 
+                  alt="Profile" 
+                  className="w-16 h-16 rounded-3xl border-2 border-petrol-500/20 object-cover"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-white dark:border-gray-800 rounded-full" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-serif text-xl text-gray-900 dark:text-white leading-none">{user.displayName}</p>
+                <p className="text-xs text-gray-400 font-medium tracking-wide">{user.email}</p>
               </div>
             </div>
             <button 
               onClick={onSignOut}
-              className="px-4 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 text-xs font-bold"
+              className="px-5 py-2.5 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-600 text-xs font-bold uppercase tracking-widest hover:bg-red-100 dark:hover:bg-red-900/40 transition-all"
             >
               Sair
             </button>
           </div>
         ) : (
-          <div className="text-center space-y-4">
-            <p className="text-sm text-gray-500">Sincronize suas notas e planos em todos os seus dispositivos.</p>
+          <div className="text-center space-y-6">
+            <p className="text-sm text-gray-500 font-serif italic leading-relaxed">Sincronize suas notas, destaques e planos de leitura em todos os seus dispositivos.</p>
             <button 
               onClick={onSignIn}
-              className="w-full py-4 rounded-2xl bg-petrol-500 text-white font-bold shadow-lg shadow-petrol-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-[24px] bg-petrol-600 text-white font-bold shadow-xl shadow-petrol-600/20 active:scale-95 transition-all flex items-center justify-center gap-3 hover:bg-petrol-700"
             >
-              <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
+              <img src="https://www.google.com/favicon.ico" className="w-5 h-5" alt="Google" />
               Entrar com Google
             </button>
           </div>
         )}
       </section>
-      <section className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="font-bold mb-6 flex items-center gap-2">
-          <Type className="w-5 h-5 text-petrol-500" />
-          Aparência
-        </h3>
+
+      <section className="bg-white dark:bg-gray-800 rounded-[40px] p-8 shadow-sm border border-black/5 dark:border-white/5">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="p-2 rounded-xl bg-petrol-500/10 text-petrol-500">
+            <Type className="w-5 h-5" />
+          </div>
+          <h3 className="font-serif text-xl text-gray-900 dark:text-white">Aparência</h3>
+        </div>
         
-        <div className="space-y-6">
+        <div className="space-y-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {darkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-              <span className="font-medium">Modo Escuro</span>
+            <div className="flex items-center gap-4">
+              <div className={cn(
+                "p-3 rounded-2xl transition-all",
+                darkMode ? "bg-navy-900 text-amber-400" : "bg-amber-50 text-amber-600"
+              )}>
+                {darkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+              </div>
+              <div className="space-y-0.5">
+                <span className="font-serif text-lg text-gray-900 dark:text-white block">Modo Escuro</span>
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Visual Noturno</span>
+              </div>
             </div>
             <button 
               onClick={toggleDark}
               className={cn(
-                "w-12 h-6 rounded-full transition-colors relative",
-                darkMode ? "bg-petrol-500" : "bg-gray-200"
+                "w-14 h-7 rounded-full transition-all duration-300 relative p-1",
+                darkMode ? "bg-petrol-600" : "bg-gray-200"
               )}
             >
               <div className={cn(
-                "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
-                darkMode ? "left-7" : "left-1"
+                "w-5 h-5 bg-white rounded-full transition-all duration-300 shadow-sm",
+                darkMode ? "translate-x-7" : "translate-x-0"
               )} />
             </button>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="font-medium">Tamanho da Fonte</span>
-              <span className="text-petrol-500 font-bold">{fontSize}px</span>
+          <div className="space-y-4">
+            <div className="flex justify-between items-end">
+              <div className="space-y-0.5">
+                <span className="font-serif text-lg text-gray-900 dark:text-white block">Tamanho da Fonte</span>
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Ajuste de Leitura</span>
+              </div>
+              <span className="text-petrol-600 font-bold font-serif text-xl">{fontSize}px</span>
             </div>
             <input 
               type="range" 
@@ -1614,20 +1775,31 @@ const SettingsScreen = ({ user, onSignOut, onSignIn }: { user: FirebaseUser | nu
               max="24" 
               value={fontSize}
               onChange={(e) => setFontSize(parseInt(e.target.value))}
-              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-petrol-500"
+              className="w-full h-1.5 bg-gray-100 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-petrol-600"
             />
           </div>
         </div>
       </section>
 
-      <section className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-        <h3 className="font-bold mb-4">Sobre</h3>
-        <p className="text-sm text-gray-500 leading-relaxed">
-          Sola Scriptura é um projeto dedicado a promover o estudo bíblico e a teologia reformada através da tecnologia.
+      <section className="bg-white dark:bg-gray-800 rounded-[40px] p-8 shadow-sm border border-black/5 dark:border-white/5 relative overflow-hidden">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 rounded-xl bg-petrol-500/10 text-petrol-500">
+            <Info className="w-5 h-5" />
+          </div>
+          <h3 className="font-serif text-xl text-gray-900 dark:text-white">Sobre</h3>
+        </div>
+        <p className="text-base text-gray-500 leading-relaxed font-serif italic opacity-80">
+          Sola Scriptura é um projeto dedicado a promover o estudo bíblico e a teologia reformada através da tecnologia, unindo a tradição histórica com a inovação digital.
         </p>
-        <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-between items-center text-xs text-gray-400">
-          <span>Versão 1.1.0</span>
-          <span>© 2024 Sola Scriptura</span>
+        <div className="mt-8 pt-8 border-t border-black/5 dark:border-white/5 flex justify-between items-center">
+          <div className="space-y-1">
+            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">Versão</span>
+            <span className="text-sm font-serif text-gray-600 dark:text-gray-300">1.2.0 Editorial</span>
+          </div>
+          <div className="text-right space-y-1">
+            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest block">Copyright</span>
+            <span className="text-sm font-serif text-gray-600 dark:text-gray-300">© 2024 Sola Scriptura</span>
+          </div>
         </div>
       </section>
     </div>
