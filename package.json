@@ -13,6 +13,7 @@
     "@google/genai": "^1.33.0",
     "@tailwindcss/typography": "^0.5.19",
     "clsx": "^2.1.1",
+    "firebase": "^12.10.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.460.0",
     "motion": "^12.35.0",

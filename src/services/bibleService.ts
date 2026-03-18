@@ -100,6 +100,85 @@ export const generateReadingPlan = async (topic: string): Promise<{ title: strin
   }
 };
 
+export const getSermonOutline = async (text: string): Promise<string> => {
+  const prompt = `Crie um esboço de sermão expositivo para o seguinte texto bíblico, seguindo uma estrutura homilética reformada (Introdução, Pontos Expositivos, Aplicação, Conclusão):
+  
+  "${text}"`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [{ parts: [{ text: prompt }] }],
+    });
+    return response.text || "Não foi possível gerar o esboço.";
+  } catch (error) {
+    return "Erro ao gerar esboço de sermão.";
+  }
+};
+
+export const getWordStudy = async (text: string, word: string): Promise<string> => {
+  const prompt = `Realize um estudo léxico da palavra "${word}" no contexto do seguinte texto bíblico. 
+  Explique o termo original (Grego ou Hebraico), seu significado semântico e sua importância teológica no pensamento reformado:
+  
+  Texto: "${text}"`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [{ parts: [{ text: prompt }] }],
+    });
+    return response.text || "Não foi possível realizar o estudo da palavra.";
+  } catch (error) {
+    return "Erro no estudo da palavra.";
+  }
+};
+
+export const getDailyDevotional = async (verse: { text: string, ref: string }): Promise<string> => {
+  const prompt = `Escreva uma meditação devocional diária curta e inspiradora baseada no versículo "${verse.ref}: ${verse.text}". 
+  A meditação deve ser centrada no evangelho, pastoral e encorajadora, com uma oração final.`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [{ parts: [{ text: prompt }] }],
+    });
+    return response.text || "Não foi possível gerar a meditação.";
+  } catch (error) {
+    return "Erro ao gerar devocional.";
+  }
+};
+
+export const generateVerseImage = async (verse: string): Promise<string | null> => {
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: {
+        parts: [
+          {
+            text: `A beautiful, serene, high-quality cinematic background image for a Bible verse: "${verse}". The style should be atmospheric, peaceful, and artistic. No text in the image.`,
+          },
+        ],
+      },
+      config: {
+        imageConfig: {
+          aspectRatio: "16:9",
+          imageSize: "1K"
+        },
+      },
+    });
+
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData) {
+        return `data:image/png;base64,${part.inlineData.data}`;
+      }
+    }
+    return null;
+  } catch (error) {
+    console.error("Error generating verse image:", error);
+    return null;
+  }
+};
+
 export const BOOKS = [
   { name: 'Gênesis', chapters: 50 }, { name: 'Êxodo', chapters: 40 }, { name: 'Levítico', chapters: 27 },
   { name: 'Números', chapters: 36 }, { name: 'Deuteronômio', chapters: 34 }, { name: 'Josué', chapters: 24 },

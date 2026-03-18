@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "User notes on Bible passages",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "reference": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "reference", "content", "createdAt"]
+    },
+    "ReadingPlan": {
+      "title": "ReadingPlan",
+      "description": "User's active reading plans",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "title": { "type": "string" },
+        "progress": { "type": "number" },
+        "days": { "type": "number" },
+        "currentDay": { "type": "number" },
+        "isGenerated": { "type": "boolean" },
+        "planData": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "title", "progress", "days", "currentDay", "createdAt"]
+    },
+    "Highlight": {
+      "title": "Highlight",
+      "description": "Highlighted verses",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "uid": { "type": "string" },
+        "reference": { "type": "string" },
+        "text": { "type": "string" },
+        "color": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uid", "reference", "text", "color", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User documents"
+    },
+    "/notes/{noteId}": {
+      "schema": "Note",
+      "description": "Global notes collection"
+    },
+    "/readingPlans/{planId}": {
+      "schema": "ReadingPlan",
+      "description": "Global reading plans collection"
+    },
+    "/highlights/{highlightId}": {
+      "schema": "Highlight",
+      "description": "Global highlights collection"
+    }
+  }
+}

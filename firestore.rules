@@ -1,0 +1,134 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - displayName: string
+    //   - photoURL: string
+    //   - createdAt: timestamp
+    //
+    // Collection: notes
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required)
+    //   - uid: string (required)
+    //   - reference: string (required)
+    //   - content: string (required)
+    //   - createdAt: timestamp
+    //
+    // Collection: readingPlans
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required)
+    //   - uid: string (required)
+    //   - title: string (required)
+    //   - progress: number (required)
+    //   - days: number (required)
+    //   - currentDay: number (required)
+    //   - isGenerated: boolean
+    //   - planData: string
+    //   - createdAt: timestamp
+    //
+    // Collection: highlights
+    // Document ID: auto-generated
+    // Fields:
+    //   - id: string (required)
+    //   - uid: string (required)
+    //   - reference: string (required)
+    //   - text: string (required)
+    //   - color: string (required)
+    //   - createdAt: timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidUser(data) {
+      return data.uid is string && data.email is string;
+    }
+
+    function isValidNote(data) {
+      return data.uid == request.auth.uid &&
+             data.reference is string && data.reference.size() < 100 &&
+             data.content is string && data.content.size() < 5000;
+    }
+
+    function isValidReadingPlan(data) {
+      return data.uid == request.auth.uid &&
+             data.title is string && data.title.size() < 200 &&
+             data.progress is number && data.progress >= 0 && data.progress <= 100 &&
+             data.days is number && data.days > 0 &&
+             data.currentDay is number && data.currentDay >= 0;
+    }
+
+    function isValidHighlight(data) {
+      return data.uid == request.auth.uid &&
+             data.reference is string && data.reference.size() < 100 &&
+             data.text is string && data.text.size() < 2000 &&
+             data.color is string && data.color.size() < 20;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+    }
+
+    match /notes/{noteId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidNote(request.resource.data);
+      allow update: if isDocOwner() && isValidNote(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /readingPlans/{planId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidReadingPlan(request.resource.data);
+      allow update: if isDocOwner() && isValidReadingPlan(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /highlights/{highlightId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidHighlight(request.resource.data);
+      allow update: if isDocOwner() && isValidHighlight(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}
