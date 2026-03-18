@@ -146,8 +146,8 @@ const BottomNav = ({ active, onChange }: { active: Screen, onChange: (s: Screen)
   ];
 
   return (
-    <nav className="fixed bottom-6 left-6 right-6 z-50">
-      <div className="max-w-md mx-auto bg-white/80 dark:bg-navy-900/80 backdrop-blur-xl border border-white/20 dark:border-white/5 rounded-full shadow-2xl px-4 py-3 flex justify-between items-center transition-all duration-300">
+    <nav className="fixed bottom-6 left-4 right-4 z-50">
+      <div className="max-w-md mx-auto bg-white/90 dark:bg-navy-900/90 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-[32px] shadow-2xl px-2 py-2 flex justify-between items-center transition-all duration-500">
         {items.map((item) => {
           const isActive = active === item.id;
           return (
@@ -158,23 +158,30 @@ const BottomNav = ({ active, onChange }: { active: Screen, onChange: (s: Screen)
                 onChange(item.id as Screen);
               }}
               className={cn(
-                "relative p-3 rounded-full transition-all duration-300 group",
-                isActive ? "text-petrol-500 scale-110" : "text-gray-400 hover:text-petrol-400"
+                "relative flex flex-col items-center justify-center min-w-[56px] h-14 rounded-2xl transition-all duration-300 group",
+                isActive ? "text-petrol-600 dark:text-petrol-400" : "text-gray-400 hover:text-petrol-400"
               )}
             >
-              <item.icon className="w-6 h-6" />
-              {isActive && (
-                <motion.div 
-                  layoutId="nav-glow"
-                  className="absolute inset-0 bg-petrol-500/10 rounded-full -z-10 blur-md"
-                />
-              )}
+              <div className={cn(
+                "p-2 rounded-xl transition-all duration-300",
+                isActive ? "bg-petrol-500/10 scale-110" : "group-hover:bg-gray-100 dark:group-hover:bg-white/5"
+              )}>
+                <item.icon className="w-5 h-5" />
+              </div>
+              
               <span className={cn(
-                "absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-widest opacity-0 transition-all duration-300",
-                isActive && "opacity-100 -bottom-1"
+                "text-[9px] font-bold uppercase tracking-tighter transition-all duration-300 mt-1",
+                isActive ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1 absolute"
               )}>
                 {item.label}
               </span>
+
+              {isActive && (
+                <motion.div 
+                  layoutId="nav-indicator"
+                  className="absolute -top-1 w-1 h-1 bg-petrol-500 rounded-full"
+                />
+              )}
             </button>
           );
         })}
