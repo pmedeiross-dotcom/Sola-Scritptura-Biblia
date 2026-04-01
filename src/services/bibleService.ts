@@ -1,4 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
+import { getStoredChapter, getStoredVersions, saveBibleVersion } from "../../services/db";
+import { MOCK_VERSES } from "../../constants";
+import { Verse } from "../../types";
 
 let aiInstance: any = null;
 
@@ -13,9 +16,6 @@ const getAI = () => {
   return aiInstance;
 };
 
-import { getStoredChapter } from "../../services/db";
-import { MOCK_VERSES } from "../../constants";
-
 export interface BibleContent {
   text: string;
   reference: string;
@@ -24,11 +24,44 @@ export interface BibleContent {
   crossReferences?: string[];
 }
 
+let arcBibleImportPromise: Promise<void> | null = null;
+
+const ensureARCBibleLoaded = async (): Promise<void> => {
+  if (arcBibleImportPromise) return arcBibleImportPromise;
+  arcBibleImportPromise = (async () => {
+    try {
+      const versions = await getStoredVersions();
+      if (versions.some(v => v.code === 'ARC')) return;
+      const response = await fetch('/arc-bible.json');
+      if (!response.ok) return;
+      const data = await response.json();
+      if (!data || !data.verses || !Array.isArray(data.verses)) return;
+      const meta = {
+        code: 'ARC',
+        name: 'Almeida Revista e Corrigida',
+        language: 'pt',
+        importedAt: Date.now(),
+        ...(data.metadata || {})
+      };
+      await saveBibleVersion(meta, data.verses as Verse[]);
+    } catch (e) {
+      arcBibleImportPromise = null;
+      console.error('Erro ao importar Bíblia ARC:', e);
+    }
+  })();
+  return arcBibleImportPromise;
+};
+
 export const getBibleContent = async (reference: string, version: string = 'ARC'): Promise<BibleContent> => {
   // Parse reference (e.g., "Romanos 8")
   const parts = reference.split(' ');
   const book = parts.slice(0, -1).join(' ');
   const chapter = parseInt(parts[parts.length - 1]);
+
+  // 0. Ensure the bundled ARC Bible is loaded into IndexedDB on first use
+  if (version === 'ARC') {
+    await ensureARCBibleLoaded();
+  }
 
   // 1. Try to fetch from IndexedDB
   try {
