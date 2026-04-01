@@ -58,7 +58,26 @@ export const getBibleContent = async (reference: string, version: string = 'ARC'
     };
   }
 
-  // 3. Try to fetch from AI
+  // 3. Try to fetch from local JSON files (if they exist in public/bibles/)
+  try {
+    const response = await fetch(`/bibles/${version}/${book}_${chapter}.json`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.verses) {
+        return {
+          text: data.verses.map((v: any) => `${v.verse} ${v.text}`).join('\n'),
+          reference,
+          summary: data.summary || "Conteúdo carregado de arquivo local.",
+          context: data.context || "Esta versão está disponível localmente no servidor.",
+          crossReferences: data.crossReferences || []
+        };
+      }
+    }
+  } catch (fetchError) {
+    // Silently fail as this is an optional fallback
+  }
+
+  // 4. Try to fetch from AI
   const ai = getAI();
   if (ai) {
     const prompt = `Atue como um servidor de API de Bíblia. Retorne o texto bíblico para a referência "${reference}" na versão "${version}". 
@@ -88,7 +107,7 @@ export const getBibleContent = async (reference: string, version: string = 'ARC'
   }
 
   return {
-    text: "Capítulo não encontrado localmente. Por favor, importe esta versão da Bíblia ou configure a chave da API do Gemini para leitura via IA.",
+    text: "Capítulo não encontrado localmente. Por favor, importe esta versão da Bíblia ou use a IA (requer configuração) para leitura.",
     reference: reference,
     summary: "Conteúdo indisponível.",
     context: "Não foi possível localizar este capítulo no banco de dados local ou via IA."
@@ -97,7 +116,7 @@ export const getBibleContent = async (reference: string, version: string = 'ARC'
 
 export const getTheologicalAnalysis = async (text: string): Promise<string> => {
   const ai = getAI();
-  if (!ai) return "O assistente teológico está indisponível sem uma chave de API.";
+  if (!ai) return "O assistente teológico (IA) está desativado no momento. Importe o conteúdo localmente para usar as funções básicas.";
 
   const prompt = `Analise o seguinte texto bíblico sob uma perspectiva reformada histórica (Sola Scriptura). 
   Destaque as doutrinas da graça, a soberania de Deus e a aplicação prática para a vida cristã:
@@ -165,7 +184,7 @@ export const generateReadingPlan = async (topic: string): Promise<{ title: strin
 
 export const getSermonOutline = async (text: string): Promise<string> => {
   const ai = getAI();
-  if (!ai) return "O gerador de esboços está indisponível sem uma chave de API.";
+  if (!ai) return "O gerador de esboços (IA) está desativado no momento.";
 
   const prompt = `Crie um esboço de sermão expositivo para o seguinte texto bíblico, seguindo uma estrutura homilética reformada (Introdução, Pontos Expositivos, Aplicação, Conclusão):
   
@@ -184,7 +203,7 @@ export const getSermonOutline = async (text: string): Promise<string> => {
 
 export const getWordStudy = async (text: string, word: string): Promise<string> => {
   const ai = getAI();
-  if (!ai) return "O estudo de palavras está indisponível sem uma chave de API.";
+  if (!ai) return "O estudo de palavras (IA) está desativado no momento.";
 
   const prompt = `Realize um estudo léxico da palavra "${word}" no contexto do seguinte texto bíblico. 
   Explique o termo original (Grego ou Hebraico), seu significado semântico e sua importância teológica no pensamento reformado:
@@ -204,7 +223,7 @@ export const getWordStudy = async (text: string, word: string): Promise<string> 
 
 export const getDailyDevotional = async (verse: { text: string, ref: string }): Promise<string> => {
   const ai = getAI();
-  if (!ai) return "O devocional diário está indisponível sem uma chave de API.";
+  if (!ai) return "O devocional diário (IA) está desativado no momento.";
 
   const prompt = `Escreva uma meditação devocional diária curta e inspiradora baseada no versículo "${verse.ref}: ${verse.text}". 
   A meditação deve ser centrada no evangelho, pastoral e encorajadora, com uma oração final.`;

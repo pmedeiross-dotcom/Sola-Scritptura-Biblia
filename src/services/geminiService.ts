@@ -15,7 +15,7 @@ const getAI = () => {
 
 export async function getGeminiResponse(prompt: string): Promise<string> {
   const ai = getAI();
-  if (!ai) return "O assistente de IA está indisponível sem uma chave de API. Por favor, importe o conteúdo localmente ou configure a chave nas configurações.";
+  if (!ai) return "O assistente de IA está desativado no momento. Por favor, use o conteúdo local ou configure a chave nas configurações para ativar as funções de IA.";
 
   try {
     const response = await ai.models.generateContent({

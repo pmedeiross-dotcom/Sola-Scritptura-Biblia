@@ -19,7 +19,7 @@ const getAI = () => {
 
 export const getTheologicalInsight = async (query: string, context: 'biblical' | 'confessional' | 'general' = 'general'): Promise<string> => {
   const ai = getAI();
-  if (!ai) return "O assistente teológico está indisponível no momento.";
+  if (!ai) return "O assistente teológico (IA) está desativado no momento. Use o conteúdo local para as funções básicas.";
   try {
     const systemPrompt = `
       Você é um assistente teológico especializado na Fé Reformada Clássica.
@@ -52,7 +52,7 @@ export const getTheologicalInsight = async (query: string, context: 'biblical' |
 
 export const getBibleAssistantResponse = async (query: string, bibleContext: Verse[]): Promise<string> => {
   const ai = getAI();
-  if (!ai) return "O assistente bíblico está indisponível no momento.";
+  if (!ai) return "O assistente bíblico (IA) está desativado no momento.";
   try {
     const contextText = bibleContext.length > 0 
       ? `Contexto Bíblico Encontrado:\n${bibleContext.map(v => `[${v.book} ${v.chapter}:${v.verse}] ${v.text}`).join('\n')}`
@@ -106,11 +106,31 @@ export const getBibleChapter = async (book: string, chapter: number, version: Bi
   const local = MOCK_VERSES.filter(v => v.book === book && v.chapter === chapter && v.version === version);
   if (local.length > 0) return local;
 
-  // 3. Try AI
+  // 3. Try local JSON files (public/bibles/)
+  try {
+    const response = await fetch(`/bibles/${version}/${book}_${chapter}.json`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data && data.verses) {
+        return data.verses.map((v: any) => ({
+          book,
+          chapter,
+          verse: v.verse,
+          text: v.text,
+          version
+        }));
+      }
+    }
+  } catch (e) {
+    // Silently fail
+  }
+
+  // 4. Try AI
   const ai = getAI();
   if (!ai) return [];
   // Mapeamento de nomes de versões para instruções mais claras ao modelo
-  const versionMap: Record<BibleVersion, string> = {
+  const versionMap: Record<string, string> = {
+    'ARC': 'Almeida Revista e Corrigida (Português)',
     'ARA': 'Almeida Revista e Atualizada (Português)',
     'NVT': 'Nova Versão Transformadora (Português)',
     'KJV': 'King James Version (Inglês)',
