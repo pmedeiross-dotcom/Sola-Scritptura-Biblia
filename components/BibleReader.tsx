@@ -451,7 +451,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({ initialBook, initialChapter, 
               className="flex flex-col items-center cursor-pointer px-4 py-1.5 rounded-2xl transition-all hover:bg-petrol-50 dark:hover:bg-navy-800 active:scale-95"
             >
               <span className="font-serif font-black text-gray-900 dark:text-white text-base leading-none">
-                {book} {chapter} (ARC)
+                {book} {chapter} - ARC
               </span>
               <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-300 dark:text-gray-600 mt-1">Navegar</span>
             </div>

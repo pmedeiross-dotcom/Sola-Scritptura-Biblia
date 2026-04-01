@@ -1,5 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Verse, BibleVersion } from "../types";
+import { getStoredChapter } from "./db";
+import { MOCK_VERSES } from "../constants";
 
 // Initialize Gemini Client lazily to avoid crash if key is missing
 let aiInstance: GoogleGenAI | null = null;
@@ -8,7 +10,6 @@ const getAI = () => {
   if (!aiInstance) {
     const key = process.env.GEMINI_API_KEY || process.env.API_KEY;
     if (!key) {
-      console.warn("Gemini API key is missing. AI features will be disabled.");
       return null;
     }
     aiInstance = new GoogleGenAI({ apiKey: key });
@@ -93,6 +94,19 @@ export const getBibleAssistantResponse = async (query: string, bibleContext: Ver
 };
 
 export const getBibleChapter = async (book: string, chapter: number, version: BibleVersion): Promise<Verse[]> => {
+  // 1. Try local IndexedDB
+  try {
+    const stored = await getStoredChapter(version, book, chapter);
+    if (stored && stored.length > 0) return stored;
+  } catch (e) {
+    console.error("Error fetching from local DB:", e);
+  }
+
+  // 2. Try MOCK_VERSES
+  const local = MOCK_VERSES.filter(v => v.book === book && v.chapter === chapter && v.version === version);
+  if (local.length > 0) return local;
+
+  // 3. Try AI
   const ai = getAI();
   if (!ai) return [];
   // Mapeamento de nomes de versões para instruções mais claras ao modelo

@@ -6,7 +6,6 @@ const getAI = () => {
   if (!aiInstance) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      console.warn("GEMINI_API_KEY não encontrada. O assistente de estudo não funcionará.");
       return null;
     }
     aiInstance = new GoogleGenAI({ apiKey });
@@ -16,7 +15,7 @@ const getAI = () => {
 
 export async function getGeminiResponse(prompt: string): Promise<string> {
   const ai = getAI();
-  if (!ai) return "Erro: Chave de API não configurada.";
+  if (!ai) return "O assistente de IA está indisponível sem uma chave de API. Por favor, importe o conteúdo localmente ou configure a chave nas configurações.";
 
   try {
     const response = await ai.models.generateContent({

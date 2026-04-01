@@ -6,13 +6,15 @@ const getAI = () => {
   if (!aiInstance) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      console.warn("GEMINI_API_KEY não encontrada.");
       return null;
     }
     aiInstance = new GoogleGenAI({ apiKey });
   }
   return aiInstance;
 };
+
+import { getStoredChapter } from "../../services/db";
+import { MOCK_VERSES } from "../../constants";
 
 export interface BibleContent {
   text: string;
@@ -23,42 +25,79 @@ export interface BibleContent {
 }
 
 export const getBibleContent = async (reference: string, version: string = 'ARC'): Promise<BibleContent> => {
-  const ai = getAI();
-  if (!ai) return { text: "Erro: Chave de API não configurada.", reference };
+  // Parse reference (e.g., "Romanos 8")
+  const parts = reference.split(' ');
+  const book = parts.slice(0, -1).join(' ');
+  const chapter = parseInt(parts[parts.length - 1]);
 
-  const prompt = `Atue como um servidor de API de Bíblia. Retorne o texto bíblico para a referência "${reference}" na versão "${version}". 
-  Além do texto, forneça um breve resumo teológico do capítulo e o contexto histórico.
-  Retorne em formato JSON com as chaves: "text" (o texto completo com números de versículos), "reference" (a referência formatada), "summary" (resumo), "context" (contexto histórico), "crossReferences" (lista de 3-5 referências cruzadas importantes).`;
-
+  // 1. Try to fetch from IndexedDB
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: [{ parts: [{ text: prompt }] }],
-      config: {
-        responseMimeType: "application/json",
-      }
-    });
+    const storedVerses = await getStoredChapter(version, book, chapter);
+    if (storedVerses && storedVerses.length > 0) {
+      return {
+        text: storedVerses.map(v => `${v.verse} ${v.text}`).join('\n'),
+        reference,
+        summary: "Conteúdo carregado do armazenamento local.",
+        context: "Esta versão foi importada para o seu dispositivo.",
+        crossReferences: []
+      };
+    }
+  } catch (dbError) {
+    console.error("Error reading from IndexedDB:", dbError);
+  }
 
-    const data = JSON.parse(response.text || '{}');
+  // 2. Try to fetch from MOCK_VERSES
+  const mockVerses = MOCK_VERSES.filter(v => v.book === book && v.chapter === chapter && v.version === version);
+  if (mockVerses.length > 0) {
     return {
-      text: data.text || "Texto não encontrado.",
-      reference: data.reference || reference,
-      summary: data.summary,
-      context: data.context,
-      crossReferences: data.crossReferences || []
-    };
-  } catch (error) {
-    console.error("Error fetching Bible content:", error);
-    return {
-      text: "Erro ao carregar o texto bíblico. Verifique sua conexão.",
-      reference: reference
+      text: mockVerses.map(v => `${v.verse} ${v.text}`).join('\n'),
+      reference,
+      summary: "Conteúdo de demonstração.",
+      context: "Este é um capítulo de exemplo disponível no app.",
+      crossReferences: []
     };
   }
+
+  // 3. Try to fetch from AI
+  const ai = getAI();
+  if (ai) {
+    const prompt = `Atue como um servidor de API de Bíblia. Retorne o texto bíblico para a referência "${reference}" na versão "${version}". 
+    Além do texto, forneça um breve resumo teológico do capítulo e o contexto histórico.
+    Retorne em formato JSON com as chaves: "text" (o texto completo com números de versículos), "reference" (a referência formatada), "summary" (resumo), "context" (contexto histórico), "crossReferences" (lista de 3-5 referências cruzadas importantes).`;
+
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [{ parts: [{ text: prompt }] }],
+        config: {
+          responseMimeType: "application/json",
+        }
+      });
+
+      const data = JSON.parse(response.text || '{}');
+      return {
+        text: data.text || "Texto não encontrado.",
+        reference: data.reference || reference,
+        summary: data.summary,
+        context: data.context,
+        crossReferences: data.crossReferences || []
+      };
+    } catch (error) {
+      console.error("Error fetching Bible content from AI:", error);
+    }
+  }
+
+  return {
+    text: "Capítulo não encontrado localmente. Por favor, importe esta versão da Bíblia ou configure a chave da API do Gemini para leitura via IA.",
+    reference: reference,
+    summary: "Conteúdo indisponível.",
+    context: "Não foi possível localizar este capítulo no banco de dados local ou via IA."
+  };
 };
 
 export const getTheologicalAnalysis = async (text: string): Promise<string> => {
   const ai = getAI();
-  if (!ai) return "Erro: Chave de API não configurada.";
+  if (!ai) return "O assistente teológico está indisponível sem uma chave de API.";
 
   const prompt = `Analise o seguinte texto bíblico sob uma perspectiva reformada histórica (Sola Scriptura). 
   Destaque as doutrinas da graça, a soberania de Deus e a aplicação prática para a vida cristã:
@@ -126,7 +165,7 @@ export const generateReadingPlan = async (topic: string): Promise<{ title: strin
 
 export const getSermonOutline = async (text: string): Promise<string> => {
   const ai = getAI();
-  if (!ai) return "Erro: Chave de API não configurada.";
+  if (!ai) return "O gerador de esboços está indisponível sem uma chave de API.";
 
   const prompt = `Crie um esboço de sermão expositivo para o seguinte texto bíblico, seguindo uma estrutura homilética reformada (Introdução, Pontos Expositivos, Aplicação, Conclusão):
   
@@ -145,7 +184,7 @@ export const getSermonOutline = async (text: string): Promise<string> => {
 
 export const getWordStudy = async (text: string, word: string): Promise<string> => {
   const ai = getAI();
-  if (!ai) return "Erro: Chave de API não configurada.";
+  if (!ai) return "O estudo de palavras está indisponível sem uma chave de API.";
 
   const prompt = `Realize um estudo léxico da palavra "${word}" no contexto do seguinte texto bíblico. 
   Explique o termo original (Grego ou Hebraico), seu significado semântico e sua importância teológica no pensamento reformado:
@@ -165,7 +204,7 @@ export const getWordStudy = async (text: string, word: string): Promise<string> 
 
 export const getDailyDevotional = async (verse: { text: string, ref: string }): Promise<string> => {
   const ai = getAI();
-  if (!ai) return "Erro: Chave de API não configurada.";
+  if (!ai) return "O devocional diário está indisponível sem uma chave de API.";
 
   const prompt = `Escreva uma meditação devocional diária curta e inspiradora baseada no versículo "${verse.ref}: ${verse.text}". 
   A meditação deve ser centrada no evangelho, pastoral e encorajadora, com uma oração final.`;
