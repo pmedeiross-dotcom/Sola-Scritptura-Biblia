@@ -22,7 +22,7 @@ export interface BibleContent {
   crossReferences?: string[];
 }
 
-export const getBibleContent = async (reference: string, version: string = 'ARA'): Promise<BibleContent> => {
+export const getBibleContent = async (reference: string, version: string = 'ARC'): Promise<BibleContent> => {
   const ai = getAI();
   if (!ai) return { text: "Erro: Chave de API não configurada.", reference };
 

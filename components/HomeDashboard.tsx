@@ -112,7 +112,7 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({ onChangeTab, userParams }
                 {dailyVerse.book} {dailyVerse.chapter}:{dailyVerse.verse}
               </div>
               <span className="w-1.5 h-1.5 rounded-full bg-white/20"></span>
-              <span className="text-white/50 font-bold uppercase tracking-widest">Almeida ARA</span>
+              <span className="text-white/50 font-bold uppercase tracking-widest">Almeida ARC</span>
             </div>
           </div>
       </section>

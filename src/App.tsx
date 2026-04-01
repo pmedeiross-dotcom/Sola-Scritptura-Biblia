@@ -749,7 +749,7 @@ const BibleScreen = ({ onAddNote, user, onReferenceChange }: { onAddNote: (ref: 
     <div className={cn("flex flex-col h-full bg-paper-50 dark:bg-navy-900 transition-all", isFocusMode && "bg-white dark:bg-black")}>
       {!isFocusMode && (
         <Header 
-          title={`${book.name} ${chapter}`} 
+          title={`${book.name} ${chapter} (ARC)`} 
           actions={
             <div className="flex items-center gap-1">
               <button onClick={() => setShowSearch(!showSearch)} className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-all">

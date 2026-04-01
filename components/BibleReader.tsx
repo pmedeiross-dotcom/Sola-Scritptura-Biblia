@@ -26,7 +26,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({ initialBook, initialChapter, 
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
   
-  const [primaryVersion, setPrimaryVersion] = useState<string>('ARA');
+  const [primaryVersion, setPrimaryVersion] = useState<string>('ARC');
   const [secondaryVersion, setSecondaryVersion] = useState<string>('NA28');
   const [favorites, setFavorites] = useState<string[]>([]); 
   const [allNotes, setAllNotes] = useState<Note[]>([]);
@@ -147,7 +147,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({ initialBook, initialChapter, 
           const stored = await getStoredChapter(vCode, book, chapter);
           if (stored && stored.length > 0) return stored;
         } catch (e) { console.error(e); }
-        const standardVersions = ['ARA', 'NVT', 'KJV', 'NA28', 'BHS'];
+        const standardVersions = ['ARC', 'ARA', 'NVT', 'KJV', 'NA28', 'BHS'];
         if (standardVersions.includes(vCode)) {
           return await getBibleChapter(book, chapter, vCode as BibleVersion);
         }
@@ -257,6 +257,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({ initialBook, initialChapter, 
   };
 
   const allAvailableVersions = useMemo(() => [
+    { code: 'ARC', label: 'Almeida Revista e Corrigida', type: 'system' },
     { code: 'ARA', label: 'Almeida Revista e Atualizada', type: 'system' },
     { code: 'NVT', label: 'Nova Versão Transformadora', type: 'system' },
     { code: 'KJV', label: 'King James Version', type: 'system' },
@@ -450,7 +451,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({ initialBook, initialChapter, 
               className="flex flex-col items-center cursor-pointer px-4 py-1.5 rounded-2xl transition-all hover:bg-petrol-50 dark:hover:bg-navy-800 active:scale-95"
             >
               <span className="font-serif font-black text-gray-900 dark:text-white text-base leading-none">
-                {book} {chapter}
+                {book} {chapter} (ARC)
               </span>
               <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-300 dark:text-gray-600 mt-1">Navegar</span>
             </div>
