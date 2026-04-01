@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, MessageSquarePlus, Settings, Book, Heart, Check, X, Loader2, Type, Minus, Plus, Pencil, Save, MessageSquare, UploadCloud, LibraryBig, Search, Languages } from 'lucide-react';
 import { MOCK_VERSES, BIBLE_BOOKS } from '../constants';
 import { getTheologicalInsight, getBibleChapter } from '../services/geminiService';
@@ -46,6 +46,10 @@ const BibleReader: React.FC<BibleReaderProps> = ({ initialBook, initialChapter, 
   const [navTab, setNavTab] = useState<'AT' | 'NT'>('NT');
   const [selectedBookForNav, setSelectedBookForNav] = useState<string | null>(null);
 
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const SWIPE_THRESHOLD = 60;
+
   // Dictionary state
   const [showDictionary, setShowDictionary] = useState(false);
   const [dictSearch, setDictSearch] = useState('');
@@ -56,6 +60,56 @@ const BibleReader: React.FC<BibleReaderProps> = ({ initialBook, initialChapter, 
     setToast({ message, visible: true });
     setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 2500);
   };
+
+  const currentBookInfo = useMemo(() => BIBLE_BOOKS.find(b => b.name === book), [book]);
+  const maxChapters = currentBookInfo?.chapters ?? 1;
+
+  // Scroll to top when book or chapter changes
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [book, chapter]);
+
+  const goToPrevChapter = useCallback(() => {
+    if (chapter > 1) {
+      setChapter(c => c - 1);
+    } else {
+      // Go to last chapter of previous book
+      const currentIndex = BIBLE_BOOKS.findIndex(b => b.name === book);
+      if (currentIndex > 0) {
+        const prevBook = BIBLE_BOOKS[currentIndex - 1];
+        setBook(prevBook.name);
+        setChapter(prevBook.chapters);
+      }
+    }
+  }, [book, chapter]);
+
+  const goToNextChapter = useCallback(() => {
+    if (chapter < maxChapters) {
+      setChapter(c => c + 1);
+    } else {
+      // Go to first chapter of next book
+      const currentIndex = BIBLE_BOOKS.findIndex(b => b.name === book);
+      if (currentIndex < BIBLE_BOOKS.length - 1) {
+        const nextBook = BIBLE_BOOKS[currentIndex + 1];
+        setBook(nextBook.name);
+        setChapter(1);
+      }
+    }
+  }, [book, chapter, maxChapters]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
+      if (deltaX < 0) goToNextChapter();
+      else goToPrevChapter();
+    }
+    touchStartX.current = null;
+  }, [goToNextChapter, goToPrevChapter]);
 
   const refreshVersions = async () => {
     try {
@@ -445,7 +499,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({ initialBook, initialChapter, 
          </div>
 
          <div className="flex-[2] flex items-center justify-center gap-1">
-            <button onClick={() => setChapter(c => Math.max(1, c - 1))} className="p-2 hover:bg-gray-100 dark:hover:bg-navy-800 rounded-full text-gray-400 active-ripple"><ChevronLeft size={20} /></button>
+            <button onClick={goToPrevChapter} className="p-2 hover:bg-gray-100 dark:hover:bg-navy-800 rounded-full text-gray-400 active-ripple"><ChevronLeft size={20} /></button>
             <div 
               onClick={() => { setShowNav(true); setSelectedBookForNav(null); }}
               className="flex flex-col items-center cursor-pointer px-4 py-1.5 rounded-2xl transition-all hover:bg-petrol-50 dark:hover:bg-navy-800 active:scale-95"
@@ -455,7 +509,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({ initialBook, initialChapter, 
               </span>
               <span className="text-[8px] font-black uppercase tracking-[0.2em] text-gray-300 dark:text-gray-600 mt-1">Navegar</span>
             </div>
-            <button onClick={() => setChapter(c => c + 1)} className="p-2 hover:bg-gray-100 dark:hover:bg-navy-800 rounded-full text-gray-400 active-ripple"><ChevronRight size={20} /></button>
+            <button onClick={goToNextChapter} className="p-2 hover:bg-gray-100 dark:hover:bg-navy-800 rounded-full text-gray-400 active-ripple"><ChevronRight size={20} /></button>
          </div>
 
          <div className="flex-1 flex items-center justify-end gap-0.5">
@@ -518,7 +572,7 @@ const BibleReader: React.FC<BibleReaderProps> = ({ initialBook, initialChapter, 
       )}
 
       {/* Main Reader View */}
-      <div className="flex-1 overflow-y-auto p-4 pb-32" onClick={() => { setShowSettings(false); }}>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pb-32" onClick={() => { setShowSettings(false); }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         <div className={`mx-auto ${isParallel ? 'w-full max-w-6xl' : 'max-w-2xl'}`}>
           {isLoadingText ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4"><Loader2 size={40} className="text-petrol-600 animate-spin" /><p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Invocando o Texto...</p></div>
