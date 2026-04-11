@@ -105,6 +105,8 @@ interface ImportedVerse {
   version: string;
 }
 
+type RepoVerseValue = string | string[];
+
 const normalizeKey = (value: string) => value
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
@@ -138,8 +140,15 @@ const parseRepoBibleToVerses = (payload: unknown, versionCode: string): Imported
       if (!Array.isArray(chapterRaw)) return;
 
       chapterRaw.forEach((verseRaw, verseIndex) => {
-        if (typeof verseRaw !== 'string') return;
-        const text = verseRaw.trim();
+        let text = '';
+        if (typeof verseRaw === 'string') {
+          text = verseRaw.trim();
+        } else if (Array.isArray(verseRaw)) {
+          // Some sources encode each verse as ["texto"] instead of "texto".
+          const firstText = (verseRaw as RepoVerseValue[]).find(item => typeof item === 'string');
+          text = typeof firstText === 'string' ? firstText.trim() : '';
+        }
+
         if (!text || text === ' ') return;
 
         verses.push({
