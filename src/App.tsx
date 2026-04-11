@@ -45,7 +45,7 @@ import { BELGIC_CONFESSION } from './data/belgicConfession';
 import strongsOpenScriptures from './data/strongs-open-scriptures.json';
 import OnboardingModal from './components/OnboardingModal';
 import { processFile } from '../services/importer';
-import { getStoredVersions, saveBibleVersion, saveDictionaries, type StoredBibleMeta } from '../services/db';
+import { getStoredVersions, saveBibleVersion, saveDictionaries, searchInDictionary, type StoredBibleMeta } from '../services/db';
 import type { DictionaryEntry } from '../types';
 
 // --- Utility ---
@@ -1288,6 +1288,12 @@ const BibleScreen = ({
   const [searchError, setSearchError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showStrongDictionary, setShowStrongDictionary] = useState(false);
+  const [strongDictionaryQuery, setStrongDictionaryQuery] = useState('');
+  const [strongDictionaryResults, setStrongDictionaryResults] = useState<DictionaryEntry[]>([]);
+  const [isSearchingStrongDictionary, setIsSearchingStrongDictionary] = useState(false);
+  const [strongDictionaryError, setStrongDictionaryError] = useState<string | null>(null);
+  const [hasStrongDictionarySearch, setHasStrongDictionarySearch] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [noteContent, setNoteContent] = useState('');
   const [showSubtitles, setShowSubtitles] = useState(false);
@@ -1417,6 +1423,26 @@ const BibleScreen = ({
     if (!selected) return;
     setBook(selected);
     setChapter(prev => Math.min(prev, selected.chapters));
+  };
+
+  const handleStrongDictionarySearch = async () => {
+    const query = strongDictionaryQuery.trim();
+    if (!query) return;
+
+    setIsSearchingStrongDictionary(true);
+    setStrongDictionaryError(null);
+    setHasStrongDictionarySearch(true);
+
+    try {
+      const results = await searchInDictionary(query);
+      setStrongDictionaryResults(results);
+    } catch (error) {
+      console.error('Erro na busca do dicionário Strong:', error);
+      setStrongDictionaryResults([]);
+      setStrongDictionaryError('Não foi possível consultar o dicionário agora. Tente novamente.');
+    } finally {
+      setIsSearchingStrongDictionary(false);
+    }
   };
 
   const handleChapterFilterChange = (chapterValue: number) => {
@@ -1805,6 +1831,19 @@ const BibleScreen = ({
                 STR
               </button>
               <button
+                onClick={() => setShowStrongDictionary(prev => !prev)}
+                className={cn(
+                  "px-2.5 py-1.5 rounded-lg text-[10px] font-black tracking-wider border",
+                  showStrongDictionary
+                    ? "text-petrol-600 border-petrol-200 bg-petrol-50 dark:bg-petrol-900/30 dark:border-petrol-700"
+                    : "text-gray-500 border-gray-200 bg-white dark:bg-navy-900 dark:border-gray-700"
+                )}
+                aria-label="Abrir consulta de dicionário Strong"
+                title="Abrir consulta de dicionário Strong"
+              >
+                LEX
+              </button>
+              <button
                 onClick={navigateHistoryBack}
                 disabled={navHistoryIndex <= 0}
                 className="p-2 rounded-full active:bg-gray-200 dark:active:bg-gray-800 disabled:opacity-35"
@@ -2016,6 +2055,59 @@ const BibleScreen = ({
                     <p className="text-sm text-gray-700 dark:text-gray-200 truncate">{section.title}</p>
                   </button>
                 ))}
+              </div>
+            )}
+
+            {showStrongDictionary && (
+              <div className="rounded-2xl border border-petrol-200 dark:border-petrol-800 bg-white dark:bg-navy-800 p-3 space-y-3">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-petrol-500">Consulta Strong</p>
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
+                  <input
+                    value={strongDictionaryQuery}
+                    onChange={(e) => {
+                      setStrongDictionaryQuery(e.target.value);
+                      if (strongDictionaryError) setStrongDictionaryError(null);
+                    }}
+                    onKeyDown={(e) => e.key === 'Enter' && handleStrongDictionarySearch()}
+                    placeholder="Ex: G26, H430, spirit, covenant"
+                    className="w-full rounded-xl bg-gray-50 dark:bg-navy-900 border border-gray-200 dark:border-gray-700 px-3 py-2.5 text-sm"
+                  />
+                  <button
+                    onClick={handleStrongDictionarySearch}
+                    disabled={isSearchingStrongDictionary || !strongDictionaryQuery.trim()}
+                    className="rounded-xl bg-petrol-500 text-white px-4 py-2.5 text-sm font-bold disabled:opacity-60"
+                  >
+                    {isSearchingStrongDictionary ? 'Buscando...' : 'Consultar'}
+                  </button>
+                </div>
+
+                {strongDictionaryError && (
+                  <p className="text-xs text-red-500 dark:text-red-400">{strongDictionaryError}</p>
+                )}
+
+                {!isSearchingStrongDictionary && hasStrongDictionarySearch && strongDictionaryResults.length === 0 && !strongDictionaryError && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Nenhuma entrada encontrada para essa busca.</p>
+                )}
+
+                {strongDictionaryResults.length > 0 && (
+                  <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                    {strongDictionaryResults.map(entry => (
+                      <div
+                        key={entry.id}
+                        className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-navy-900/50 p-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-black tracking-wide text-petrol-600 dark:text-petrol-300">{entry.word}</p>
+                          <span className="text-[10px] px-2 py-0.5 rounded-lg bg-petrol-500/10 text-petrol-700 dark:text-petrol-200">
+                            {entry.category || 'strong'}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-gray-700 dark:text-gray-200 leading-relaxed">{entry.definition}</p>
+                        <p className="mt-1 text-[10px] text-gray-400">Fonte: {entry.source}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

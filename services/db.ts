@@ -130,7 +130,26 @@ export const searchInDictionary = async (query: string): Promise<DictionaryEntry
     request.onsuccess = () => {
       const all = request.result as DictionaryEntry[];
       const lower = query.toLowerCase();
-      resolve(all.filter(e => e.word.toLowerCase().includes(lower)).slice(0, 20));
+      const filtered = all.filter(entry => {
+        const word = entry.word.toLowerCase();
+        const definition = entry.definition.toLowerCase();
+        const source = entry.source.toLowerCase();
+        const category = (entry.category || '').toLowerCase();
+        return word.includes(lower)
+          || definition.includes(lower)
+          || source.includes(lower)
+          || category.includes(lower);
+      });
+
+      const exactCode = lower.replace(/\s+/g, '');
+      filtered.sort((a, b) => {
+        const aExact = a.word.toLowerCase() === exactCode ? 1 : 0;
+        const bExact = b.word.toLowerCase() === exactCode ? 1 : 0;
+        if (aExact !== bExact) return bExact - aExact;
+        return a.word.localeCompare(b.word);
+      });
+
+      resolve(filtered.slice(0, 30));
     };
     request.onerror = () => resolve([]);
   });
