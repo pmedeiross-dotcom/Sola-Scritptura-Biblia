@@ -42,9 +42,11 @@ import { formatInternalBibleAIReportMarkdown, runInternalBibleAI } from './servi
 import { WESTMINSTER_CONFESSION } from './data/westminsterConfession';
 import { HEIDELBERG_CATECHISM } from './data/heidelbergCatechism';
 import { BELGIC_CONFESSION } from './data/belgicConfession';
+import strongsOpenScriptures from './data/strongs-open-scriptures.json';
 import OnboardingModal from './components/OnboardingModal';
 import { processFile } from '../services/importer';
 import { getStoredVersions, saveBibleVersion, saveDictionaries, type StoredBibleMeta } from '../services/db';
+import type { DictionaryEntry } from '../types';
 
 // --- Utility ---
 function cn(...inputs: ClassValue[]) {
@@ -170,6 +172,18 @@ const parseRepoBibleToVerses = (payload: unknown, versionCode: string): Imported
   }
 
   return verses;
+};
+
+const mapBundledStrongDictionaryToEntries = (): DictionaryEntry[] => {
+  return Object.entries(strongsOpenScriptures as Record<string, string>)
+    .map(([code, definition]) => ({
+      id: code,
+      word: code,
+      definition: String(definition || '').trim(),
+      source: 'OpenScriptures Strong',
+      category: code.startsWith('G') ? 'grego' : code.startsWith('H') ? 'hebraico' : 'strong'
+    }))
+    .filter(entry => entry.definition.length > 0);
 };
 
 // --- Types ---
@@ -3397,6 +3411,7 @@ const SettingsScreen = ({
   onLoadMissingGithubVersions,
   onImportMissingGithubVersions,
   onImportStrongDictionary,
+  onReloadDefaultStrongDictionary,
   onResetData,
   activityEvents,
   onClearActivity,
@@ -3424,6 +3439,7 @@ const SettingsScreen = ({
   onLoadMissingGithubVersions: () => Promise<GitHubVersionOption[]>;
   onImportMissingGithubVersions: (versions: GitHubVersionOption[]) => Promise<void>;
   onImportStrongDictionary: (file: File) => void;
+  onReloadDefaultStrongDictionary: () => Promise<void>;
   onResetData: () => void;
   activityEvents: ActivityEvent[];
   onClearActivity: () => void;
@@ -3933,6 +3949,14 @@ const SettingsScreen = ({
             className="w-full py-3 rounded-2xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-100 font-semibold disabled:opacity-60"
           >
             {isImportingStrongDictionary ? 'Importando Dicionário...' : 'Importar Dicionário Strong'}
+          </button>
+
+          <button
+            onClick={() => void onReloadDefaultStrongDictionary()}
+            disabled={isImportingStrongDictionary}
+            className="w-full py-3 rounded-2xl bg-petrol-500/10 border border-petrol-300 text-petrol-700 dark:text-petrol-200 font-semibold disabled:opacity-60"
+          >
+            {isImportingStrongDictionary ? 'Importando Dicionário...' : 'Recarregar dicionário Strong padrão'}
           </button>
 
           <input
@@ -4684,6 +4708,27 @@ export default function App() {
     }
   };
 
+  const reloadDefaultStrongDictionary = async () => {
+    try {
+      setIsImportingStrongDictionary(true);
+      setStrongDictionaryImportStatus(null);
+
+      const entries = mapBundledStrongDictionaryToEntries();
+      if (entries.length === 0) {
+        throw new Error('Nenhuma entrada padrão foi encontrada.');
+      }
+
+      await saveDictionaries(entries);
+      setStrongDictionaryImportStatus(`Dicionário padrão recarregado: ${entries.length.toLocaleString()} entradas disponíveis para análise Strong.`);
+      trackActivity('strong_dictionary_import', `Padrão OpenScriptures: ${entries.length}`);
+    } catch (error: any) {
+      console.error('Falha ao recarregar dicionário Strong padrão:', error);
+      setStrongDictionaryImportStatus(`Falha ao recarregar dicionário padrão: ${error?.message || 'erro desconhecido'}`);
+    } finally {
+      setIsImportingStrongDictionary(false);
+    }
+  };
+
   const importAppData = async (file: File) => {
     try {
       const text = await file.text();
@@ -4857,6 +4902,7 @@ export default function App() {
             onLoadMissingGithubVersions={loadMissingGithubVersions}
             onImportMissingGithubVersions={importMissingGithubVersions}
             onImportStrongDictionary={importStrongDictionaryData}
+            onReloadDefaultStrongDictionary={reloadDefaultStrongDictionary}
             onResetData={resetLocalData}
             activityEvents={activityEvents}
             onClearActivity={clearActivity}
