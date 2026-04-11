@@ -162,6 +162,74 @@ const STOP_WORDS = new Set([
   'foi', 'era', 'ser', 'tem', 'ha', 'sao', 'lhe', 'isso', 'isto', 'este', 'essa',
 ]);
 
+type ReasoningMode = 'auto' | 'pastoral' | 'didatico' | 'analitico' | 'socratico' | 'canonico';
+type TheologicalAxisId = 'graca' | 'fe' | 'santidade' | 'esperanca' | 'oracao' | 'soberania';
+
+const REASONING_MODE_STORAGE_KEY = 'internal-ai-reasoning-mode-v1';
+
+const THEOLOGICAL_AXES: Array<{ id: TheologicalAxisId; title: string; hints: string[]; summary: string; practical: string }> = [
+  {
+    id: 'graca',
+    title: 'Graça e Redenção',
+    hints: ['graca', 'misericordia', 'perdao', 'salvacao', 'justificacao', 'cristo', 'cruz', 'sangue'],
+    summary: 'A passagem aponta para a iniciativa salvadora de Deus, não para mérito humano.',
+    practical: 'Responda com gratidão ativa: confissão sincera, oração e obediência concreta.'
+  },
+  {
+    id: 'fe',
+    title: 'Fé e Confiança',
+    hints: ['fe', 'confiar', 'crer', 'esperar', 'duvida', 'firmes', 'promessa'],
+    summary: 'O texto convoca a confiar na Palavra, mesmo sob tensão e incerteza.',
+    practical: 'Identifique uma área de medo e substitua por uma decisão de confiança em Deus.'
+  },
+  {
+    id: 'santidade',
+    title: 'Santidade e Obediência',
+    hints: ['santo', 'obediencia', 'pecado', 'arrependimento', 'pureza', 'justo', 'mandamento'],
+    summary: 'Há um chamado ético claro para abandonar o pecado e viver em conformidade com Deus.',
+    practical: 'Escolha uma prática de obediência para hoje e mantenha constância por 7 dias.'
+  },
+  {
+    id: 'esperanca',
+    title: 'Esperança e Consolação',
+    hints: ['esperanca', 'consolo', 'paz', 'alegria', 'descanso', 'fortaleza', 'renovo'],
+    summary: 'A passagem sustenta o coração com esperança firme no caráter e nas promessas de Deus.',
+    practical: 'Memorize um versículo de esperança e use-o como resposta nos momentos de aflição.'
+  },
+  {
+    id: 'oracao',
+    title: 'Oração e Dependência',
+    hints: ['oracao', 'orar', 'clamar', 'suplicar', 'pedir', 'buscar', 'vigiar'],
+    summary: 'O texto direciona para dependência prática de Deus por meio da oração perseverante.',
+    practical: 'Estruture um momento diário de oração com adoração, confissão, gratidão e petição.'
+  },
+  {
+    id: 'soberania',
+    title: 'Soberania e Providência',
+    hints: ['soberano', 'proposito', 'vontade', 'governa', 'eleito', 'chamado', 'providencia'],
+    summary: 'A ênfase recai sobre a ação soberana de Deus na história e na vida do seu povo.',
+    practical: 'Ore submetendo seus planos ao Senhor e confie no tempo e no governo dEle.'
+  },
+];
+
+const QUERY_EXPANSIONS: Record<string, string[]> = {
+  oracao: ['orar', 'clamar', 'suplicar', 'intercessao', 'pedir'],
+  graca: ['misericordia', 'favor', 'perdao', 'salvacao', 'justificacao'],
+  fe: ['confianca', 'crer', 'esperar', 'firmeza'],
+  ansiedade: ['medo', 'inquietacao', 'preocupacao', 'aflicao'],
+  esperanca: ['consolo', 'paz', 'renovo', 'fortaleza'],
+  santidade: ['obediencia', 'pureza', 'arrependimento', 'justica'],
+};
+
+const TOPICAL_REF_BANK: Array<{ key: string; refs: string[] }> = [
+  { key: 'oracao', refs: ['Mateus 6:9', 'Filipenses 4:6', '1 Tessalonicenses 5:17', 'Tiago 5:16'] },
+  { key: 'graca', refs: ['Efésios 2:8', 'Romanos 5:8', 'Tito 3:5', '2 Coríntios 12:9'] },
+  { key: 'fe', refs: ['Hebreus 11:1', 'Romanos 10:17', '2 Coríntios 5:7', 'Marcos 9:24'] },
+  { key: 'ansiedade', refs: ['Filipenses 4:6', '1 Pedro 5:7', 'Mateus 6:34', 'Salmos 94:19'] },
+  { key: 'esperanca', refs: ['Romanos 15:13', 'Lamentações 3:21', 'Hebreus 10:23', 'Isaías 40:31'] },
+  { key: 'santidade', refs: ['1 Pedro 1:15', 'Romanos 12:1', '1 João 2:1', 'Hebreus 12:14'] },
+];
+
 const TOPIC_PLAN_TEMPLATES: Array<{ key: string; title: string; refs: string[]; focus: string[] }> = [
   {
     key: 'oracao',
@@ -243,6 +311,120 @@ const resolveReferenceText = async (reference: string) => {
 const findPlanTemplate = (topic: string) => {
   const normalizedTopic = normalize(topic);
   return TOPIC_PLAN_TEMPLATES.find(template => normalizedTopic.includes(template.key));
+};
+
+const isReasoningMode = (value: string): value is ReasoningMode => ['auto', 'pastoral', 'didatico', 'analitico', 'socratico', 'canonico'].includes(value);
+
+const getReasoningMode = (): ReasoningMode => {
+  if (typeof window === 'undefined') return 'auto';
+  const saved = window.localStorage.getItem(REASONING_MODE_STORAGE_KEY) || '';
+  return isReasoningMode(saved) ? saved : 'auto';
+};
+
+const countHits = (normalizedText: string, term: string) => {
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escaped}\\b`, 'g');
+  return (normalizedText.match(regex) || []).length;
+};
+
+const excerptText = (value: string, max = 110) => (value.length > max ? `${value.slice(0, max - 3)}...` : value);
+
+const buildTheologicalProfile = (text: string, verses: Array<{ verse: number; text: string }>) => {
+  const normalizedText = normalize(text);
+
+  return THEOLOGICAL_AXES
+    .map(axis => {
+      const score = axis.hints.reduce((acc, hint) => acc + countHits(normalizedText, hint), 0);
+
+      const evidence = verses
+        .map(item => {
+          const normalizedVerse = normalize(item.text);
+          const verseScore = axis.hints.reduce((acc, hint) => acc + (normalizedVerse.includes(hint) ? 1 : 0), 0);
+          return { verse: item.verse, text: item.text, score: verseScore };
+        })
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3)
+        .map(item => `v.${item.verse}: "${excerptText(item.text)}"`);
+
+      return {
+        ...axis,
+        score,
+        evidence,
+      };
+    })
+    .sort((a, b) => b.score - a.score);
+};
+
+const expandSemanticTokens = (query: string) => {
+  const normalizedQuery = normalize(query);
+  const baseTokens = toTokens(query);
+  const expanded = new Set(baseTokens);
+
+  for (const [key, synonyms] of Object.entries(QUERY_EXPANSIONS)) {
+    if (normalizedQuery.includes(key) || baseTokens.includes(key)) {
+      expanded.add(key);
+      synonyms.forEach(item => expanded.add(item));
+    }
+  }
+
+  for (const token of baseTokens) {
+    const synonyms = QUERY_EXPANSIONS[token];
+    if (synonyms) synonyms.forEach(item => expanded.add(item));
+  }
+
+  return Array.from(expanded);
+};
+
+const inferCandidateBooks = (normalizedQuery: string): string[] => {
+  const base = ['Salmos', 'Provérbios', 'Mateus', 'João', 'Romanos', 'Efésios', 'Hebreus'];
+  const byTheme: Array<{ key: string; books: string[] }> = [
+    { key: 'oracao', books: ['Salmos', 'Mateus', 'Lucas', 'Tiago'] },
+    { key: 'graca', books: ['Romanos', 'Efésios', 'Gálatas', 'Tito'] },
+    { key: 'fe', books: ['Hebreus', 'Romanos', 'Marcos', 'Habacuque'] },
+    { key: 'ansiedade', books: ['Filipenses', 'Mateus', '1 Pedro', 'Salmos'] },
+    { key: 'esperanca', books: ['Romanos', 'Isaías', 'Lamentações', 'Hebreus'] },
+    { key: 'santidade', books: ['1 Pedro', 'Romanos', 'Levítico', 'Hebreus'] },
+  ];
+
+  const pool = new Set(base);
+  for (const item of byTheme) {
+    if (normalizedQuery.includes(item.key)) item.books.forEach(book => pool.add(book));
+  }
+
+  return Array.from(pool);
+};
+
+const resolveEffectiveReasoningMode = (
+  selectedMode: ReasoningMode,
+  topAxes: Array<{ score: number }>,
+  versesCount: number
+): Exclude<ReasoningMode, 'auto'> => {
+  if (selectedMode !== 'auto') return selectedMode;
+
+  if (versesCount >= 25) return 'analitico';
+  const highestScore = topAxes[0]?.score || 0;
+  const secondScore = topAxes[1]?.score || 0;
+  if (highestScore >= 4 && secondScore >= 3) return 'canonico';
+  if (highestScore >= 3 && secondScore <= 1) return 'socratico';
+  return 'didatico';
+};
+
+const buildTensionLine = (topAxes: Array<{ title: string }>) => {
+  if (topAxes.length < 2) return 'O texto foca em um eixo dominante sem tensão temática relevante aparente.';
+  return `Tensão central identificada: ${topAxes[0].title} em diálogo com ${topAxes[1].title}.`;
+};
+
+const buildCanonicalSynthesis = (topAxes: Array<{ title: string; summary: string }>) => {
+  if (topAxes.length === 0) {
+    return 'Síntese canônica: a passagem confirma a unidade bíblica entre revelação de Deus e resposta de fé.';
+  }
+
+  if (topAxes.length === 1) {
+    return `Síntese canônica: o eixo ${topAxes[0].title.toLowerCase()} aparece de forma consistente com o testemunho geral das Escrituras.`;
+  }
+
+  return `Síntese canônica: ${topAxes[0].summary} Em conjunto, ${topAxes[1].summary.toLowerCase()}`;
 };
 
 // Função para ler capítulo localmente
@@ -328,72 +510,127 @@ export const getBibleContent = async (reference: string, version: string = 'ARC'
 
 export const getTheologicalAnalysis = async (text: string): Promise<string> => {
   const verses = parseVerseLines(text);
-  const opening = verses[0]?.text || text.split('\n')[0] || text;
-  const themes = extractKeyTerms(text, 5);
+  const opening = verses[0]?.text || text.split('\n')[0] || '';
+  const themes = extractKeyTerms(text, 6);
   const hash = hashText(text);
+  const selectedMode = getReasoningMode();
+  const profile = buildTheologicalProfile(text, verses);
+  const topAxes = profile.filter(item => item.score > 0).slice(0, 2);
+  const mode = resolveEffectiveReasoningMode(selectedMode, topAxes, verses.length);
 
-  const intros = [
-    'O trecho apresenta um movimento claro de revelação, correção e esperança.',
-    'A passagem destaca a iniciativa de Deus e a resposta da fé no cotidiano.',
-    'O texto conduz o coração para confiar mais em Deus do que em si mesmo.'
-  ];
-  const doctrinalOpeners = [
-    'Doutrinariamente, vemos a centralidade da graça e da soberania de Deus.',
-    'Numa leitura reformada, o texto afirma que Deus governa meios e fins.',
-    'Teologicamente, a passagem sustenta a dependência total da obra do Senhor.'
-  ];
-  const applications = [
-    'Na prática, isso nos chama a obediência humilde e perseverante.',
-    'Como aplicação, somos convidados a trocar autossuficiência por oração.',
-    'Pastoralmente, o texto aponta para arrependimento sincero e vida piedosa.'
+  const modeOpeners: Record<Exclude<ReasoningMode, 'auto'>, string[]> = {
+    pastoral: [
+      'A leitura revela o cuidado de Deus com o coração e com a caminhada diária do crente.',
+      'Este trecho conforta, corrige e convida a uma confiança mais profunda no Senhor.',
+      'A passagem nos conduz da ansiedade para a confiança, da culpa para a graça.'
+    ],
+    didatico: [
+      'Observando a estrutura do texto, vemos um ensino progressivo: verdade, resposta e prática.',
+      'A passagem organiza sua mensagem em doutrina, chamado e aplicação concreta.',
+      'Há coerência interna entre o que Deus declara e o que Ele exige do seu povo.'
+    ],
+    analitico: [
+      'O texto apresenta um eixo central e subtemas secundários que convergem para uma tese teológica.',
+      'A distribuição dos termos indica um foco principal acompanhado de implicações éticas diretas.',
+      'A análise lexical sugere relação entre identidade em Deus e resposta prática de obediência.'
+    ],
+    socratico: [
+      'A passagem convida a perguntas profundas: o que Deus revela sobre si, sobre nós e sobre o caminho de obediência?',
+      'A leitura socrática destaca questões que expõem motivações do coração e decisões práticas de fé.',
+      'O texto pede reflexão guiada: o que precisa ser abandonado, crido e praticado hoje?'
+    ],
+    canonico: [
+      'O trecho se integra ao fio canônico da Escritura, unindo promessa, cumprimento e resposta do povo de Deus.',
+      'A leitura canônica mostra continuidade entre a mensagem local do texto e a teologia bíblica global.',
+      'A passagem não é isolada: ela participa de um testemunho maior sobre a obra redentora de Deus.'
+    ]
+  };
+
+  const reasoningLead = modeOpeners[mode][hash % modeOpeners[mode].length];
+  const termsLine = themes.length > 0
+    ? `Termos mais recorrentes no trecho: ${themes.join(', ')}.`
+    : 'Termos recorrentes: fé, graça, obediência e esperança.';
+
+  const evidenceLines = topAxes
+    .flatMap(axis => axis.evidence.map(item => `- ${axis.title}: ${item}`))
+    .slice(0, 5);
+
+  const doctrinalLines = topAxes.length > 0
+    ? topAxes.map((axis, index) => `${index + 1}. ${axis.summary}`)
+    : ['1. O texto aponta para a ação de Deus como fundamento da transformação humana.'];
+
+  const practicalLines = topAxes.length > 0
+    ? topAxes.map((axis, index) => `${index + 1}. ${axis.practical}`)
+    : ['1. Separe 10 minutos hoje para oração e leitura atenta do capítulo.'];
+
+  const toneHint = mode === 'analitico'
+    ? 'Modo analítico ativo: foco em coerência textual e inferência doutrinária.'
+    : mode === 'didatico'
+      ? 'Modo didático ativo: foco em clareza e progressão de ensino.'
+      : mode === 'socratico'
+        ? 'Modo socrático ativo: foco em perguntas diagnósticas e decisões espirituais.'
+        : mode === 'canonico'
+          ? 'Modo canônico ativo: foco na unidade bíblica e síntese teológica ampla.'
+          : 'Modo pastoral ativo: foco em consolo, exortação e vida prática.';
+
+  const socraticQuestions = [
+    `1. O que este texto revela sobre Deus que confronta minhas expectativas atuais?`,
+    `2. Qual verdade desta passagem eu já conheço, mas ainda não obedeço com consistência?`,
+    `3. Qual passo de fé concreto devo praticar nas próximas 24 horas?`
   ];
 
-  const selectedIntro = intros[hash % intros.length];
-  const selectedDoctrine = doctrinalOpeners[hash % doctrinalOpeners.length];
-  const selectedApplication = applications[hash % applications.length];
-  const keywordLine = themes.length > 0
-    ? `Termos dominantes observados: ${themes.join(', ')}.`
-    : 'Termos dominantes observados: fé, graça, obediência e esperança.';
+  const canonicalSynthesis = buildCanonicalSynthesis(topAxes);
+  const tensionLine = buildTensionLine(topAxes);
+  const confidence = topAxes.length === 0 ? 'Baixa' : topAxes[0].score >= 4 ? 'Alta' : 'Média';
 
-  return [
-    '### Resumo',
-    selectedIntro,
-    `A ênfase principal aparece logo no início: "${opening}"`,
+  const response = [
+    '### Leitura Guiada',
+    reasoningLead,
+    opening ? `Entrada do texto: "${excerptText(opening, 160)}"` : 'Entrada do texto: trecho não identificado com clareza.',
+    selectedMode === 'auto' ? `Modo automático escolheu: ${mode}.` : '',
+    toneHint,
     '',
-    '### Doutrina',
-    selectedDoctrine,
-    keywordLine,
-    'Esse padrão reforça a visão bíblica de que a transformação do crente é fruto da ação de Deus.',
+    '### Evidências do Texto',
+    termsLine,
+    ...(evidenceLines.length > 0 ? evidenceLines : ['- Não foi possível extrair versos-evidência suficientes deste conteúdo.']),
     '',
-    '### Aplicação',
-    selectedApplication,
-    'Passo prático para hoje: escolha um versículo do capítulo, ore sobre ele e pratique uma obediência concreta ainda hoje.'
-  ].join('\n');
+    '### Tensão Interpretativa',
+    tensionLine,
+    '',
+    '### Raciocínio Teológico',
+    ...doctrinalLines,
+    '',
+    '### Síntese Canônica',
+    canonicalSynthesis,
+    `Nível de confiança da inferência: ${confidence}.`,
+    '',
+    '### Aplicação Prática (Hoje)',
+    ...practicalLines,
+    'Passo final: ore com base em um dos versículos-evidência e registre em uma nota a decisão tomada.'
+  ];
+
+  if (mode === 'socratico') {
+    response.push('', '### Perguntas Socráticas', ...socraticQuestions);
+  }
+
+  return response.filter(Boolean).join('\n');
 };
 
 export const searchBible = async (query: string): Promise<{ reference: string, excerpt: string }[]> => {
   const normalizedQuery = normalize(query);
-  const tokens = toTokens(query);
-  if (normalizedQuery.length === 0 || tokens.length === 0) return [];
+  const semanticTokens = expandSemanticTokens(query);
+  if (normalizedQuery.length === 0 || semanticTokens.length === 0) return [];
 
-  const topicalRefs: Array<{ key: string; refs: string[] }> = [
-    { key: 'oracao', refs: ['Mateus 6:9', 'Filipenses 4:6', '1 Tessalonicenses 5:17'] },
-    { key: 'graca', refs: ['Efésios 2:8', 'Romanos 5:8', 'Tito 3:5'] },
-    { key: 'fe', refs: ['Hebreus 11:1', 'Romanos 10:17', '2 Coríntios 5:7'] },
-    { key: 'ansiedade', refs: ['Filipenses 4:6', '1 Pedro 5:7', 'Mateus 6:34'] },
-    { key: 'esperanca', refs: ['Romanos 15:13', 'Lamentações 3:21', 'Hebreus 10:23'] },
-  ];
-
-  const matchedTopic = topicalRefs.find(item => normalizedQuery.includes(item.key));
+  const matchedTopic = TOPICAL_REF_BANK.find(item => normalizedQuery.includes(item.key));
   if (matchedTopic) {
     const results = await Promise.all(matchedTopic.refs.map(resolveReferenceText));
     return results.filter((item): item is { reference: string; excerpt: string } => item !== null).slice(0, 10);
   }
 
-  const curatedBooks = ['Salmos', 'Mateus', 'João', 'Romanos', 'Efésios', 'Provérbios', 'Gênesis'];
+  const candidateBooks = inferCandidateBooks(normalizedQuery);
   const scored: Array<{ reference: string; excerpt: string; score: number }> = [];
 
-  for (const bookName of curatedBooks) {
+  for (const bookName of candidateBooks) {
     const bookInfo = BOOKS.find(item => item.name === bookName);
     if (!bookInfo) continue;
 
@@ -403,9 +640,14 @@ export const searchBible = async (query: string): Promise<{ reference: string, e
 
       for (const verse of verses) {
         const normalizedVerse = normalize(verse.text);
-        let score = 0;
-        for (const token of tokens) {
-          if (normalizedVerse.includes(token)) score += 1;
+        let score = normalizedVerse.includes(normalizedQuery) ? 6 : 0;
+        for (const token of semanticTokens) {
+          if (normalizedVerse.includes(token)) {
+            score += token.length >= 7 ? 3 : 2;
+          }
+          if (token.length >= 5 && normalizedVerse.split(' ').some(word => word.startsWith(token.slice(0, 5)))) {
+            score += 1;
+          }
         }
         if (score === 0) continue;
 
@@ -434,6 +676,56 @@ export const generateReadingPlan = async (topic: string): Promise<{ title: strin
         day: index + 1,
         reference,
         focus: template.focus[index] || 'Medite no texto e aplique uma verdade prática hoje.',
+      })),
+    };
+  }
+
+  const normalizedTopic = normalize(topic);
+  const dominantAxis = THEOLOGICAL_AXES
+    .map(axis => ({ axis, score: axis.hints.reduce((acc, hint) => acc + (normalizedTopic.includes(hint) ? 1 : 0), 0) }))
+    .sort((a, b) => b.score - a.score)[0];
+
+  const axisPlans: Record<TheologicalAxisId, { title: string; refs: string[]; focus: string[] }> = {
+    graca: {
+      title: 'Plano de 7 Dias: Graça que Transforma',
+      refs: ['Efésios 2:8', 'Romanos 5:1', 'Tito 3:5', 'João 1:16', '2 Coríntios 12:9', 'Hebreus 4:16', 'Romanos 8:1'],
+      focus: ['Salvação é dom', 'Paz com Deus em Cristo', 'Regeneração pela misericórdia', 'Plenitude da graça', 'Força na fraqueza', 'Acesso ao trono da graça', 'Viver sem condenação']
+    },
+    fe: {
+      title: 'Plano de 7 Dias: Fé que Persevera',
+      refs: ['Hebreus 11:1', 'Romanos 10:17', 'Marcos 9:24', 'Provérbios 3:5', '2 Coríntios 5:7', 'Salmos 46:1', 'Judas 1:20'],
+      focus: ['Fundamento da fé', 'Fé nasce da Palavra', 'Fé em meio à fragilidade', 'Confiar no Senhor', 'Andar por fé', 'Refúgio nas lutas', 'Fortalecer a vida espiritual']
+    },
+    santidade: {
+      title: 'Plano de 7 Dias: Santidade no Cotidiano',
+      refs: ['1 Pedro 1:15', 'Romanos 12:1', 'Efésios 4:22', 'Colossenses 3:12', 'Tiago 1:22', 'Hebreus 12:14', '1 João 1:9'],
+      focus: ['Chamado à santidade', 'Culto racional com a vida', 'Abandonar o velho homem', 'Vestir-se de virtudes cristãs', 'Praticar a Palavra', 'Buscar a santificação', 'Confissão e restauração']
+    },
+    esperanca: {
+      title: 'Plano de 7 Dias: Esperança que Sustenta',
+      refs: ['Romanos 15:13', 'Lamentações 3:22', 'Isaías 40:31', 'Salmos 42:11', 'Hebreus 10:23', '2 Coríntios 4:16', 'Apocalipse 21:5'],
+      focus: ['Esperança pelo Espírito', 'Misericórdias renovadas', 'Força para quem espera', 'Esperança na adversidade', 'Fidelidade das promessas', 'Renovação interior', 'Esperança final em Cristo']
+    },
+    oracao: {
+      title: 'Plano de 7 Dias: Dependência em Oração',
+      refs: ['Mateus 6:9', 'Lucas 11:9', 'Salmos 5:3', 'Filipenses 4:6', '1 Tessalonicenses 5:17', 'Hebreus 4:16', 'Tiago 5:16'],
+      focus: ['Modelo de oração', 'Perseverança no pedir', 'Buscar a Deus no início do dia', 'Entregar ansiedade ao Senhor', 'Constância na oração', 'Confiança no trono da graça', 'Intercessão eficaz']
+    },
+    soberania: {
+      title: 'Plano de 7 Dias: Soberania e Providência',
+      refs: ['Romanos 8:28', 'Efésios 1:11', 'Salmos 103:19', 'Isaías 46:10', 'Gênesis 50:20', 'Provérbios 16:9', 'Daniel 4:35'],
+      focus: ['Deus coopera para o bem', 'Deus opera conforme seu propósito', 'Reino soberano do Senhor', 'Fins decretados por Deus', 'Providência em meio ao mal', 'Planos humanos sob direção divina', 'Nenhum poder limita Deus']
+    },
+  };
+
+  if (dominantAxis?.score > 0) {
+    const plan = axisPlans[dominantAxis.axis.id];
+    return {
+      title: plan.title,
+      days: plan.refs.map((reference, index) => ({
+        day: index + 1,
+        reference,
+        focus: plan.focus[index],
       })),
     };
   }

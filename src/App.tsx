@@ -3017,6 +3017,8 @@ const SettingsScreen = ({
   onChangeColorTheme,
   backgroundTheme,
   onChangeBackgroundTheme,
+  reasoningMode,
+  onChangeReasoningMode,
   onExportData,
   onImportData,
   onImportBibleVersion,
@@ -3042,6 +3044,8 @@ const SettingsScreen = ({
   onChangeColorTheme: (theme: ColorTheme) => void;
   backgroundTheme: BackgroundTheme;
   onChangeBackgroundTheme: (theme: BackgroundTheme) => void;
+  reasoningMode: InternalReasoningMode;
+  onChangeReasoningMode: (mode: InternalReasoningMode) => void;
   onExportData: () => void;
   onImportData: (file: File) => void;
   onImportBibleVersion: (file: File) => void;
@@ -3358,6 +3362,102 @@ const SettingsScreen = ({
                 );
               })}
             </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="font-medium">Inteligência Interna</span>
+              <span className="text-petrol-500 font-bold">
+                {reasoningMode === 'auto'
+                  ? 'Auto'
+                  : reasoningMode === 'analitico'
+                    ? 'Analítico'
+                    : reasoningMode === 'didatico'
+                      ? 'Didático'
+                      : reasoningMode === 'socratico'
+                        ? 'Socrático'
+                        : reasoningMode === 'canonico'
+                          ? 'Canônico'
+                          : 'Pastoral'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => onChangeReasoningMode('auto')}
+                className={cn(
+                  'p-2 rounded-xl border text-xs font-semibold',
+                  reasoningMode === 'auto'
+                    ? 'border-petrol-500 bg-petrol-500 text-white'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200'
+                )}
+              >
+                Auto
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeReasoningMode('pastoral')}
+                className={cn(
+                  'p-2 rounded-xl border text-xs font-semibold',
+                  reasoningMode === 'pastoral'
+                    ? 'border-petrol-500 bg-petrol-500 text-white'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200'
+                )}
+              >
+                Pastoral
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeReasoningMode('didatico')}
+                className={cn(
+                  'p-2 rounded-xl border text-xs font-semibold',
+                  reasoningMode === 'didatico'
+                    ? 'border-petrol-500 bg-petrol-500 text-white'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200'
+                )}
+              >
+                Didático
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeReasoningMode('analitico')}
+                className={cn(
+                  'p-2 rounded-xl border text-xs font-semibold',
+                  reasoningMode === 'analitico'
+                    ? 'border-petrol-500 bg-petrol-500 text-white'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200'
+                )}
+              >
+                Analítico
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeReasoningMode('socratico')}
+                className={cn(
+                  'p-2 rounded-xl border text-xs font-semibold',
+                  reasoningMode === 'socratico'
+                    ? 'border-petrol-500 bg-petrol-500 text-white'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200'
+                )}
+              >
+                Socrático
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeReasoningMode('canonico')}
+                className={cn(
+                  'p-2 rounded-xl border text-xs font-semibold',
+                  reasoningMode === 'canonico'
+                    ? 'border-petrol-500 bg-petrol-500 text-white'
+                    : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200'
+                )}
+              >
+                Canônico
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Controla o estilo de raciocínio da IA local no comentário bíblico, mantendo tudo offline.
+            </p>
           </div>
         </div>
       </section>
@@ -3738,9 +3838,11 @@ interface GoalTargets {
 type GoalProfile = 'conservador' | 'crescimento' | 'intensivo';
 type ColorTheme = 'petrol' | 'olive' | 'wine' | 'ocean' | 'graphite' | 'sand' | 'emerald';
 type BackgroundTheme = 'paper' | 'mist' | 'sage' | 'rose' | 'midnight';
+type InternalReasoningMode = 'auto' | 'pastoral' | 'didatico' | 'analitico' | 'socratico' | 'canonico';
 
 const COLOR_THEME_STORAGE_KEY = 'color-theme-v1';
 const BACKGROUND_THEME_STORAGE_KEY = 'app-background-v1';
+const INTERNAL_REASONING_MODE_STORAGE_KEY = 'internal-ai-reasoning-mode-v1';
 const COLOR_THEME_OPTIONS: Array<{ id: ColorTheme; name: string; preview: string }> = [
   { id: 'petrol', name: 'Clássico', preview: 'linear-gradient(135deg, #2c7a7b, #285e61)' },
   { id: 'olive', name: 'Oliva', preview: 'linear-gradient(135deg, #5f7a46, #455a2f)' },
@@ -3759,6 +3861,7 @@ const BACKGROUND_THEME_OPTIONS: Array<{ id: BackgroundTheme; name: string; previ
 ];
 const isColorTheme = (value: string): value is ColorTheme => COLOR_THEME_OPTIONS.some(option => option.id === value);
 const isBackgroundTheme = (value: string): value is BackgroundTheme => BACKGROUND_THEME_OPTIONS.some(option => option.id === value);
+const isInternalReasoningMode = (value: string): value is InternalReasoningMode => ['auto', 'pastoral', 'didatico', 'analitico', 'socratico', 'canonico'].includes(value);
 
 // --- Main App ---
 
@@ -3779,6 +3882,10 @@ export default function App() {
   const [backgroundTheme, setBackgroundTheme] = useState<BackgroundTheme>(() => {
     const saved = localStorage.getItem(BACKGROUND_THEME_STORAGE_KEY);
     return saved && isBackgroundTheme(saved) ? saved : 'paper';
+  });
+  const [reasoningMode, setReasoningMode] = useState<InternalReasoningMode>(() => {
+    const saved = localStorage.getItem(INTERNAL_REASONING_MODE_STORAGE_KEY);
+    return saved && isInternalReasoningMode(saved) ? saved : 'auto';
   });
   const [notes, setNotes] = useState<Note[]>(() => {
     const saved = localStorage.getItem('notes');
@@ -3902,6 +4009,7 @@ export default function App() {
         theme: localStorage.getItem('theme') || 'light',
         colorTheme: localStorage.getItem(COLOR_THEME_STORAGE_KEY) || colorTheme,
         backgroundTheme: localStorage.getItem(BACKGROUND_THEME_STORAGE_KEY) || backgroundTheme,
+        reasoningMode: localStorage.getItem(INTERNAL_REASONING_MODE_STORAGE_KEY) || reasoningMode,
         fontSize: localStorage.getItem('app-font-size') || String(fontSize),
         readingLocations: localStorage.getItem('reading-locations') || '[]',
         verseCommentary: localStorage.getItem('verse-commentary') || '{}',
@@ -4092,6 +4200,7 @@ export default function App() {
           theme?: string;
           colorTheme?: string;
           backgroundTheme?: string;
+          reasoningMode?: string;
           fontSize?: string;
           readingLocations?: string;
           verseCommentary?: string;
@@ -4113,6 +4222,9 @@ export default function App() {
       }
       if (typeof parsed.data.backgroundTheme === 'string' && isBackgroundTheme(parsed.data.backgroundTheme)) {
         localStorage.setItem(BACKGROUND_THEME_STORAGE_KEY, parsed.data.backgroundTheme);
+      }
+      if (typeof parsed.data.reasoningMode === 'string' && isInternalReasoningMode(parsed.data.reasoningMode)) {
+        localStorage.setItem(INTERNAL_REASONING_MODE_STORAGE_KEY, parsed.data.reasoningMode);
       }
       if (typeof parsed.data.fontSize === 'string') localStorage.setItem('app-font-size', parsed.data.fontSize);
       if (typeof parsed.data.readingLocations === 'string') localStorage.setItem('reading-locations', parsed.data.readingLocations);
@@ -4142,6 +4254,7 @@ export default function App() {
     localStorage.removeItem('goal-targets-v1');
     localStorage.removeItem(COLOR_THEME_STORAGE_KEY);
     localStorage.removeItem(BACKGROUND_THEME_STORAGE_KEY);
+    localStorage.removeItem(INTERNAL_REASONING_MODE_STORAGE_KEY);
 
     setNotes([]);
     setActivityEvents([]);
@@ -4175,6 +4288,10 @@ export default function App() {
     document.documentElement.setAttribute('data-app-bg', backgroundTheme);
     localStorage.setItem(BACKGROUND_THEME_STORAGE_KEY, backgroundTheme);
   }, [backgroundTheme]);
+
+  useEffect(() => {
+    localStorage.setItem(INTERNAL_REASONING_MODE_STORAGE_KEY, reasoningMode);
+  }, [reasoningMode]);
 
   useEffect(() => {
     const onOnline = () => setIsOnline(true);
@@ -4224,6 +4341,8 @@ export default function App() {
             onChangeColorTheme={setColorTheme}
             backgroundTheme={backgroundTheme}
             onChangeBackgroundTheme={setBackgroundTheme}
+            reasoningMode={reasoningMode}
+            onChangeReasoningMode={setReasoningMode}
             onExportData={exportAppData}
             onImportData={importAppData}
             onImportBibleVersion={importBibleVersionData}
