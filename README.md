@@ -67,3 +67,13 @@ No menu Ajustes:
 
 1. Caso haja erro ENOSPC, libere espaço em disco antes de instalar novas dependências.
 2. O service worker é registrado apenas em build de produção.
+
+## IA Gemma sem instalação local
+
+1. O modelo não roda "dentro do GitHub" sozinho. Para qualquer pessoa usar sem instalar, publique um endpoint remoto de inferência (ex.: servidor Ollama/LLM API).
+2. Copie [.env.example](.env.example) para `.env` e configure:
+   VITE_REMOTE_LLM_URL
+   VITE_REMOTE_LLM_MODEL
+   VITE_REMOTE_LLM_TOKEN (opcional)
+3. Com `VITE_REMOTE_LLM_URL` preenchido, o app usa IA remota automaticamente.
+4. Sem `VITE_REMOTE_LLM_URL`, o app usa fallback local via Ollama (`VITE_LOCAL_LLM_URL`).

@@ -157,6 +157,9 @@ export interface BibleContent {
 
 const LOCAL_LLM_URL = (import.meta.env.VITE_LOCAL_LLM_URL as string | undefined) || 'http://localhost:11434/api/generate';
 const LOCAL_LLM_MODEL = (import.meta.env.VITE_LOCAL_LLM_MODEL as string | undefined) || 'gemma2:2b';
+const REMOTE_LLM_URL = (import.meta.env.VITE_REMOTE_LLM_URL as string | undefined) || '';
+const REMOTE_LLM_MODEL = (import.meta.env.VITE_REMOTE_LLM_MODEL as string | undefined) || 'gemma2:2b';
+const REMOTE_LLM_TOKEN = (import.meta.env.VITE_REMOTE_LLM_TOKEN as string | undefined) || '';
 
 const extractFirstJsonBlock = (raw: string) => {
   const start = raw.indexOf('{');
@@ -186,6 +189,48 @@ const askLocalGemma = async (prompt: string, temperature = 0.35): Promise<string
 
   const data = await response.json() as { response?: string };
   return String(data?.response || '').trim();
+};
+
+const askRemoteGemma = async (prompt: string, temperature = 0.35): Promise<string> => {
+  if (!REMOTE_LLM_URL) {
+    throw new Error('Endpoint remoto não configurado');
+  }
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (REMOTE_LLM_TOKEN) {
+    headers.Authorization = `Bearer ${REMOTE_LLM_TOKEN}`;
+  }
+
+  const response = await fetch(REMOTE_LLM_URL, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model: REMOTE_LLM_MODEL,
+      prompt,
+      stream: false,
+      options: {
+        temperature,
+        num_predict: 512,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`LLM remoto indisponível (${response.status})`);
+  }
+
+  const data = await response.json() as { response?: string };
+  return String(data?.response || '').trim();
+};
+
+const askGemma = async (prompt: string, temperature = 0.35): Promise<string> => {
+  if (REMOTE_LLM_URL) {
+    return askRemoteGemma(prompt, temperature);
+  }
+  return askLocalGemma(prompt, temperature);
 };
 
 // Função para ler capítulo localmente
@@ -283,7 +328,7 @@ ${text}
 """`;
 
   try {
-    const answer = await askLocalGemma(prompt, 0.3);
+    const answer = await askGemma(prompt, 0.3);
     if (!answer) throw new Error('resposta vazia');
     return answer;
   } catch {
@@ -307,7 +352,7 @@ Limites:
 - Sem texto fora do JSON`;
 
   try {
-    const raw = await askLocalGemma(prompt, 0.2);
+    const raw = await askGemma(prompt, 0.2);
     const parsed = JSON.parse(extractFirstJsonBlock(raw)) as { results?: Array<{ reference?: string; excerpt?: string }> };
     const results = Array.isArray(parsed.results) ? parsed.results : [];
     return results
@@ -340,7 +385,7 @@ Regras:
 - Sem texto fora do JSON`;
 
   try {
-    const raw = await askLocalGemma(prompt, 0.25);
+    const raw = await askGemma(prompt, 0.25);
     const parsed = JSON.parse(extractFirstJsonBlock(raw)) as {
       title?: string;
       days?: Array<{ day?: number; reference?: string; focus?: string }>;
