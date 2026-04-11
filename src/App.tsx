@@ -2345,13 +2345,11 @@ const BibleScreen = ({
 
 const LibraryScreen = ({
   notes,
-  activityEvents,
   onOpenReference,
   onUpdateNote,
   onDeleteNote,
 }: {
   notes: Note[];
-  activityEvents: ActivityEvent[];
   onOpenReference: (reference: string) => void;
   onUpdateNote: (noteId: string, patch: Partial<Pick<Note, 'content' | 'tags' | 'notebook' | 'pinned'>>) => void;
   onDeleteNote: (noteId: string) => void;
@@ -2366,9 +2364,6 @@ const LibraryScreen = ({
   const [newNotebook, setNewNotebook] = useState('');
   const [notebookDraftById, setNotebookDraftById] = useState<Record<string, string>>({});
   const [tagDraftById, setTagDraftById] = useState<Record<string, string>>({});
-  const [activityTypeFilter, setActivityTypeFilter] = useState('all');
-  const [activityPeriod, setActivityPeriod] = useState<'7d' | '30d' | 'all'>('7d');
-  const [activityLimit, setActivityLimit] = useState(8);
 
   const getBookFromReference = (reference: string) => {
     const match = reference.match(/^(.*)\s+(\d+)(?::\d+)?$/);
@@ -2473,25 +2468,6 @@ const LibraryScreen = ({
 
     return items;
   }, [bookFilter, normalizedNotes, notebookFilter, searchTerm, sortBy, tagFilter]);
-
-  const filteredActivity = useMemo(() => {
-    const now = Date.now();
-    const minTimestamp = activityPeriod === '7d'
-      ? now - (7 * 24 * 60 * 60 * 1000)
-      : activityPeriod === '30d'
-        ? now - (30 * 24 * 60 * 60 * 1000)
-        : 0;
-
-    return activityEvents.filter(event => {
-      if (event.timestamp < minTimestamp) return false;
-      if (activityTypeFilter !== 'all' && event.type !== activityTypeFilter) return false;
-      return true;
-    });
-  }, [activityEvents, activityPeriod, activityTypeFilter]);
-
-  const activityTypes = useMemo(() => {
-    return Array.from(new Set(activityEvents.map(event => event.type))).sort((a, b) => a.localeCompare(b));
-  }, [activityEvents]);
 
   const startEditing = (note: Note) => {
     setEditingNoteId(note.id);
@@ -2809,71 +2785,6 @@ const LibraryScreen = ({
         )}
       </section>
 
-      <section className="space-y-4">
-        <h3 className="font-bold px-1">Atividade Recente</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <select
-            value={activityTypeFilter}
-            onChange={(e) => {
-              setActivityTypeFilter(e.target.value);
-              setActivityLimit(8);
-            }}
-            className="w-full p-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm"
-          >
-            <option value="all">Todos os tipos</option>
-            {activityTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-          <select
-            value={activityPeriod}
-            onChange={(e) => {
-              setActivityPeriod(e.target.value as '7d' | '30d' | 'all');
-              setActivityLimit(8);
-            }}
-            className="w-full p-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm"
-          >
-            <option value="7d">Últimos 7 dias</option>
-            <option value="30d">Últimos 30 dias</option>
-            <option value="all">Período total</option>
-          </select>
-          <div className="w-full p-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs text-gray-500 flex items-center">
-            {filteredActivity.length} evento(s)
-          </div>
-        </div>
-
-        {activityEvents.length === 0 ? (
-          <div className="p-8 text-center bg-white dark:bg-gray-800 rounded-[32px] border border-dashed border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-400">Nenhuma atividade registrada ainda.</p>
-          </div>
-        ) : filteredActivity.length === 0 ? (
-          <div className="p-8 text-center bg-white dark:bg-gray-800 rounded-[32px] border border-dashed border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-400">Nenhuma atividade para os filtros selecionados.</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredActivity.slice(0, activityLimit).map(event => (
-              <div key={event.id} className="p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{event.label}</p>
-                  <p className="text-xs text-gray-500">{event.type}</p>
-                </div>
-                <span className="text-[11px] text-gray-400 whitespace-nowrap">{new Date(event.timestamp).toLocaleString()}</span>
-              </div>
-            ))}
-
-            {activityLimit < filteredActivity.length && (
-              <button
-                type="button"
-                onClick={() => setActivityLimit(prev => prev + 10)}
-                className="w-full py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300"
-              >
-                Ver mais atividades
-              </button>
-            )}
-          </div>
-        )}
-      </section>
     </div>
   );
 };
@@ -4295,6 +4206,10 @@ interface ActivityEvent {
   timestamp: number;
 }
 
+const isUselessActivityEvent = (event: Pick<ActivityEvent, 'type' | 'label'>) => {
+  return event.type === 'screen_view' && event.label.trim().toLowerCase() === 'tela: library';
+};
+
 interface GoalTargets {
   sessions: number;
   activeDays: number;
@@ -4328,6 +4243,7 @@ const BACKGROUND_THEME_OPTIONS: Array<{ id: BackgroundTheme; name: string; previ
 const isColorTheme = (value: string): value is ColorTheme => COLOR_THEME_OPTIONS.some(option => option.id === value);
 const isBackgroundTheme = (value: string): value is BackgroundTheme => BACKGROUND_THEME_OPTIONS.some(option => option.id === value);
 const isInternalReasoningMode = (value: string): value is InternalReasoningMode => ['auto', 'pastoral', 'didatico', 'analitico', 'socratico', 'canonico'].includes(value);
+const ENABLE_ACTIVITY_TRACKING = false;
 
 // --- Main App ---
 
@@ -4394,10 +4310,7 @@ export default function App() {
       return [];
     }
   });
-  const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>(() => {
-    const saved = localStorage.getItem('activity-events-v1');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([]);
   const [goalTargets, setGoalTargets] = useState<GoalTargets>(() => {
     const saved = localStorage.getItem('goal-targets-v1');
     if (saved) {
@@ -4513,12 +4426,20 @@ export default function App() {
   };
 
   const trackActivity = (type: string, label: string) => {
+    if (!ENABLE_ACTIVITY_TRACKING) return;
+    if (isUselessActivityEvent({ type, label })) return;
+
     setActivityEvents(prev => {
       const next = [{ id: `${Date.now()}-${Math.random()}`, type, label, timestamp: Date.now() }, ...prev].slice(0, 200);
       localStorage.setItem('activity-events-v1', JSON.stringify(next));
       return next;
     });
   };
+
+  useEffect(() => {
+    localStorage.removeItem('activity-events-v1');
+    setActivityEvents([]);
+  }, []);
 
   const openPlanInBible = (plan: ReadingPlan) => {
     const target = getPlanReferenceTarget(plan);
@@ -4895,6 +4816,7 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (screen === 'library') return;
     trackActivity('screen_view', `Tela: ${screen}`);
   }, [screen]);
 
@@ -4914,7 +4836,6 @@ export default function App() {
         return (
           <LibraryScreen
             notes={notes}
-            activityEvents={activityEvents}
             onOpenReference={openNoteReference}
             onUpdateNote={updateNote}
             onDeleteNote={deleteNote}
