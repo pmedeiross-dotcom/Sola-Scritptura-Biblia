@@ -2343,7 +2343,202 @@ const BibleScreen = ({
   );
 };
 
-const LibraryScreen = ({ notes, activityEvents }: { notes: Note[]; activityEvents: ActivityEvent[] }) => {
+const LibraryScreen = ({
+  notes,
+  activityEvents,
+  onOpenReference,
+  onUpdateNote,
+  onDeleteNote,
+}: {
+  notes: Note[];
+  activityEvents: ActivityEvent[];
+  onOpenReference: (reference: string) => void;
+  onUpdateNote: (noteId: string, patch: Partial<Pick<Note, 'content' | 'tags' | 'notebook' | 'pinned'>>) => void;
+  onDeleteNote: (noteId: string) => void;
+}) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [bookFilter, setBookFilter] = useState('all');
+  const [notebookFilter, setNotebookFilter] = useState('all');
+  const [tagFilter, setTagFilter] = useState('all');
+  const [sortBy, setSortBy] = useState<'recent' | 'oldest' | 'reference' | 'pinned'>('recent');
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState('');
+  const [newNotebook, setNewNotebook] = useState('');
+  const [notebookDraftById, setNotebookDraftById] = useState<Record<string, string>>({});
+  const [tagDraftById, setTagDraftById] = useState<Record<string, string>>({});
+  const [activityTypeFilter, setActivityTypeFilter] = useState('all');
+  const [activityPeriod, setActivityPeriod] = useState<'7d' | '30d' | 'all'>('7d');
+  const [activityLimit, setActivityLimit] = useState(8);
+
+  const getBookFromReference = (reference: string) => {
+    const match = reference.match(/^(.*)\s+(\d+)(?::\d+)?$/);
+    return match?.[1]?.trim() || reference;
+  };
+
+  const normalizedNotes = useMemo(() => {
+    return notes.map(note => ({
+      ...note,
+      tags: note.tags || [],
+      notebook: note.notebook || 'Geral',
+      pinned: !!note.pinned,
+    }));
+  }, [notes]);
+
+  const availableBooks = useMemo(() => {
+    return Array.from(new Set(normalizedNotes.map(note => getBookFromReference(note.reference)))).sort((a, b) => a.localeCompare(b));
+  }, [normalizedNotes]);
+
+  const availableNotebooks = useMemo(() => {
+    return Array.from(new Set(normalizedNotes.map(note => note.notebook || 'Geral'))).sort((a, b) => a.localeCompare(b));
+  }, [normalizedNotes]);
+
+  const availableTags = useMemo(() => {
+    return Array.from(new Set(normalizedNotes.flatMap(note => note.tags || []))).sort((a, b) => a.localeCompare(b));
+  }, [normalizedNotes]);
+
+  const metrics = useMemo(() => {
+    const now = Date.now();
+    const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000);
+    const notesThisWeek = normalizedNotes.filter(note => new Date(note.date).getTime() >= sevenDaysAgo).length;
+    const pinnedCount = normalizedNotes.filter(note => note.pinned).length;
+    const notebooksCount = new Set(normalizedNotes.map(note => note.notebook || 'Geral')).size;
+    const bookCounts = new Map<string, number>();
+    for (const note of normalizedNotes) {
+      const book = getBookFromReference(note.reference);
+      bookCounts.set(book, (bookCounts.get(book) || 0) + 1);
+    }
+    const topBook = Array.from(bookCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/D';
+
+    return {
+      notesThisWeek,
+      pinnedCount,
+      notebooksCount,
+      topBook,
+    };
+  }, [normalizedNotes]);
+
+  const revisitSuggestions = useMemo(() => {
+    const now = Date.now();
+    const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+
+    return normalizedNotes
+      .filter(note => {
+        const refDate = note.updatedAt || note.date;
+        const ts = new Date(refDate).getTime();
+        return ts <= sevenDaysAgo;
+      })
+      .sort((a, b) => {
+        const aTs = new Date(a.updatedAt || a.date).getTime();
+        const bTs = new Date(b.updatedAt || b.date).getTime();
+        const aOlder = aTs <= thirtyDaysAgo ? 1 : 0;
+        const bOlder = bTs <= thirtyDaysAgo ? 1 : 0;
+        if (aOlder !== bOlder) return bOlder - aOlder;
+        return aTs - bTs;
+      })
+      .slice(0, 4);
+  }, [normalizedNotes]);
+
+  const filteredNotes = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    let items = normalizedNotes.filter(note => {
+      const matchesBook = bookFilter === 'all' || getBookFromReference(note.reference) === bookFilter;
+      if (!matchesBook) return false;
+
+      const matchesNotebook = notebookFilter === 'all' || (note.notebook || 'Geral') === notebookFilter;
+      if (!matchesNotebook) return false;
+
+      const matchesTag = tagFilter === 'all' || (note.tags || []).includes(tagFilter);
+      if (!matchesTag) return false;
+
+      if (!normalizedSearch) return true;
+      return (
+        note.reference.toLowerCase().includes(normalizedSearch)
+        || note.content.toLowerCase().includes(normalizedSearch)
+        || (note.tags || []).some(tag => tag.toLowerCase().includes(normalizedSearch))
+        || (note.notebook || 'Geral').toLowerCase().includes(normalizedSearch)
+      );
+    });
+
+    items = [...items].sort((a, b) => {
+      if (sortBy === 'pinned') {
+        if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      }
+      if (sortBy === 'oldest') return new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (sortBy === 'reference') return a.reference.localeCompare(b.reference);
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+
+    return items;
+  }, [bookFilter, normalizedNotes, notebookFilter, searchTerm, sortBy, tagFilter]);
+
+  const filteredActivity = useMemo(() => {
+    const now = Date.now();
+    const minTimestamp = activityPeriod === '7d'
+      ? now - (7 * 24 * 60 * 60 * 1000)
+      : activityPeriod === '30d'
+        ? now - (30 * 24 * 60 * 60 * 1000)
+        : 0;
+
+    return activityEvents.filter(event => {
+      if (event.timestamp < minTimestamp) return false;
+      if (activityTypeFilter !== 'all' && event.type !== activityTypeFilter) return false;
+      return true;
+    });
+  }, [activityEvents, activityPeriod, activityTypeFilter]);
+
+  const activityTypes = useMemo(() => {
+    return Array.from(new Set(activityEvents.map(event => event.type))).sort((a, b) => a.localeCompare(b));
+  }, [activityEvents]);
+
+  const startEditing = (note: Note) => {
+    setEditingNoteId(note.id);
+    setEditingContent(note.content);
+  };
+
+  const saveEditing = () => {
+    if (!editingNoteId) return;
+    const trimmed = editingContent.trim();
+    if (!trimmed) return;
+    onUpdateNote(editingNoteId, { content: trimmed });
+    setEditingNoteId(null);
+    setEditingContent('');
+  };
+
+  const cancelEditing = () => {
+    setEditingNoteId(null);
+    setEditingContent('');
+  };
+
+  const addNotebook = () => {
+    const notebook = newNotebook.trim();
+    if (!notebook) return;
+    setNotebookFilter(notebook);
+    setNewNotebook('');
+  };
+
+  const updateNoteNotebook = (noteId: string, notebook: string) => {
+    onUpdateNote(noteId, { notebook });
+  };
+
+  const addTagToNote = (note: Note) => {
+    const draft = (tagDraftById[note.id] || '').trim();
+    if (!draft) return;
+    const tags = Array.from(new Set([...(note.tags || []), draft]));
+    onUpdateNote(note.id, { tags });
+    setTagDraftById(prev => ({ ...prev, [note.id]: '' }));
+  };
+
+  const removeTagFromNote = (note: Note, tag: string) => {
+    onUpdateNote(note.id, { tags: (note.tags || []).filter(item => item !== tag) });
+  };
+
+  const togglePinned = (note: Note) => {
+    onUpdateNote(note.id, { pinned: !note.pinned });
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 pb-24 lg:pb-10 animate-fade-in">
       <div className="mb-6">
@@ -2356,36 +2551,258 @@ const LibraryScreen = ({ notes, activityEvents }: { notes: Note[]; activityEvent
           <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center mb-4">
             <Bookmark className="w-5 h-5" />
           </div>
-          <span className="text-2xl font-bold block">{notes.length}</span>
+          <span className="text-2xl font-bold block">{normalizedNotes.length}</span>
           <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Notas</span>
+          <p className="text-[11px] text-gray-500 mt-1">{metrics.notesThisWeek} novas nos últimos 7 dias</p>
         </div>
-        <div className="p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm opacity-50">
+        <div className="p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
           <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center mb-4">
             <Highlighter className="w-5 h-5" />
           </div>
-          <span className="text-2xl font-bold block">0</span>
+          <span className="text-2xl font-bold block">{metrics.pinnedCount}</span>
           <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Destaques</span>
+          <p className="text-[11px] text-gray-500 mt-1">Cadernos: {metrics.notebooksCount} • Livro foco: {metrics.topBook}</p>
         </div>
       </div>
 
+      <section className="space-y-3">
+        <h3 className="font-bold px-1">Revisitar Hoje</h3>
+        {revisitSuggestions.length === 0 ? (
+          <div className="p-4 rounded-2xl bg-white dark:bg-gray-800 border border-dashed border-gray-200 dark:border-gray-700 text-sm text-gray-500">
+            Sem sugestões por enquanto. Continue registrando suas meditações para criar revisões inteligentes.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {revisitSuggestions.map(note => (
+              <button
+                key={`revisit-${note.id}`}
+                onClick={() => onOpenReference(note.reference)}
+                className="text-left p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm"
+              >
+                <p className="text-xs font-bold text-petrol-500">{note.reference}</p>
+                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{note.content}</p>
+                <p className="text-[10px] text-gray-400 mt-2">Última revisão: {new Date(note.updatedAt || note.date).toLocaleDateString()}</p>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
       <section className="space-y-4">
         <h3 className="font-bold px-1">Notas Recentes</h3>
-        {notes.length === 0 ? (
+
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar por referência ou conteúdo"
+            className="sm:col-span-2 w-full p-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm"
+          />
+          <select
+            value={bookFilter}
+            onChange={(e) => setBookFilter(e.target.value)}
+            className="w-full p-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm"
+          >
+            <option value="all">Todos os livros</option>
+            {availableBooks.map(book => (
+              <option key={book} value={book}>{book}</option>
+            ))}
+          </select>
+          <select
+            value={notebookFilter}
+            onChange={(e) => setNotebookFilter(e.target.value)}
+            className="w-full p-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm"
+          >
+            <option value="all">Todos os cadernos</option>
+            {availableNotebooks.map(notebook => (
+              <option key={notebook} value={notebook}>{notebook}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <select
+            value={tagFilter}
+            onChange={(e) => setTagFilter(e.target.value)}
+            className="w-full p-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm"
+          >
+            <option value="all">Todas as tags</option>
+            {availableTags.map(tag => (
+              <option key={tag} value={tag}>{tag}</option>
+            ))}
+          </select>
+
+          <input
+            type="text"
+            value={newNotebook}
+            onChange={(e) => setNewNotebook(e.target.value)}
+            placeholder="Novo caderno (ex: Romanos)"
+            className="w-full p-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm"
+          />
+
+          <button
+            type="button"
+            onClick={addNotebook}
+            className="w-full p-3 rounded-2xl bg-petrol-500/10 border border-petrol-300 text-petrol-700 dark:text-petrol-200 text-sm font-semibold"
+          >
+            Criar/Filtrar caderno
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between text-xs text-gray-500 px-1">
+          <span>{filteredNotes.length} nota(s) exibida(s)</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as 'recent' | 'oldest' | 'reference' | 'pinned')}
+            className="p-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700"
+          >
+            <option value="recent">Mais recentes</option>
+            <option value="oldest">Mais antigas</option>
+            <option value="reference">Referência (A-Z)</option>
+            <option value="pinned">Priorizar destaques</option>
+          </select>
+        </div>
+
+        {normalizedNotes.length === 0 ? (
           <div className="p-12 text-center space-y-4 bg-white dark:bg-gray-800 rounded-[32px] border border-dashed border-gray-200 dark:border-gray-700">
             <Library className="w-12 h-12 text-gray-200 mx-auto" />
             <p className="text-sm text-gray-400">Nenhuma nota salva ainda.</p>
           </div>
+        ) : filteredNotes.length === 0 ? (
+          <div className="p-8 text-center bg-white dark:bg-gray-800 rounded-[32px] border border-dashed border-gray-200 dark:border-gray-700">
+            <p className="text-sm text-gray-400">Nenhuma nota encontrada com os filtros atuais.</p>
+          </div>
         ) : (
           <div className="space-y-4">
-            {notes.map(note => (
+            {filteredNotes.map(note => (
               <div key={note.id} className="p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
                 <div className="flex justify-between items-start mb-2">
                   <h4 className="font-bold text-sm text-petrol-500">{note.reference}</h4>
                   <span className="text-[10px] text-gray-400">{new Date(note.date).toLocaleDateString()}</span>
                 </div>
-                <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed">
-                  {note.content}
-                </p>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  <span className="text-[10px] px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{note.notebook || 'Geral'}</span>
+                  {(note.tags || []).map(tag => (
+                    <span key={`${note.id}-${tag}`} className="text-[10px] px-2 py-1 rounded-lg bg-petrol-500/10 text-petrol-700 dark:text-petrol-200">#{tag}</span>
+                  ))}
+                  {note.pinned && <span className="text-[10px] px-2 py-1 rounded-lg bg-amber-100 text-amber-700">Destaque</span>}
+                </div>
+
+                {editingNoteId === note.id ? (
+                  <div className="space-y-3">
+                    <textarea
+                      value={editingContent}
+                      onChange={(e) => setEditingContent(e.target.value)}
+                      className="w-full min-h-28 p-3 rounded-2xl bg-gray-50 dark:bg-navy-900 border border-gray-200 dark:border-gray-700 text-sm"
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        type="button"
+                        onClick={cancelEditing}
+                        className="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={saveEditing}
+                        className="px-3 py-2 rounded-xl bg-petrol-500 text-white text-xs font-semibold"
+                      >
+                        Salvar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs text-gray-500 line-clamp-3 leading-relaxed">
+                      {note.content}
+                    </p>
+
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <select
+                        value={notebookDraftById[note.id] || note.notebook || 'Geral'}
+                        onChange={(e) => {
+                          const notebookValue = e.target.value;
+                          setNotebookDraftById(prev => ({ ...prev, [note.id]: notebookValue }));
+                          updateNoteNotebook(note.id, notebookValue);
+                        }}
+                        className="w-full p-2 rounded-xl bg-gray-50 dark:bg-navy-900 border border-gray-200 dark:border-gray-700 text-xs"
+                      >
+                        {availableNotebooks.map(notebook => (
+                          <option key={`${note.id}-${notebook}`} value={notebook}>{notebook}</option>
+                        ))}
+                      </select>
+
+                      <input
+                        type="text"
+                        value={tagDraftById[note.id] || ''}
+                        onChange={(e) => setTagDraftById(prev => ({ ...prev, [note.id]: e.target.value }))}
+                        placeholder="Adicionar tag"
+                        className="w-full p-2 rounded-xl bg-gray-50 dark:bg-navy-900 border border-gray-200 dark:border-gray-700 text-xs"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => addTagToNote(note)}
+                        className="w-full p-2 rounded-xl border border-petrol-300 text-petrol-700 dark:text-petrol-200 text-xs font-semibold"
+                      >
+                        Salvar tag
+                      </button>
+                    </div>
+
+                    {(note.tags || []).length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {(note.tags || []).map(tag => (
+                          <button
+                            key={`${note.id}-remove-${tag}`}
+                            type="button"
+                            onClick={() => removeTagFromNote(note, tag)}
+                            className="text-[10px] px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                          >
+                            remover #{tag}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onOpenReference(note.reference)}
+                        className="px-3 py-1.5 rounded-xl bg-petrol-500/10 border border-petrol-300 text-petrol-700 dark:text-petrol-200 text-xs font-semibold"
+                      >
+                        Abrir referência
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => startEditing(note)}
+                        className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => togglePinned(note)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-xl text-xs font-semibold border",
+                          note.pinned
+                            ? "border-amber-300 bg-amber-50 text-amber-700"
+                            : "border-gray-200 dark:border-gray-700"
+                        )}
+                      >
+                        {note.pinned ? 'Desmarcar destaque' : 'Destacar'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDeleteNote(note.id)}
+                        className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-600 text-xs font-semibold"
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             ))}
           </div>
@@ -2394,13 +2811,48 @@ const LibraryScreen = ({ notes, activityEvents }: { notes: Note[]; activityEvent
 
       <section className="space-y-4">
         <h3 className="font-bold px-1">Atividade Recente</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <select
+            value={activityTypeFilter}
+            onChange={(e) => {
+              setActivityTypeFilter(e.target.value);
+              setActivityLimit(8);
+            }}
+            className="w-full p-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm"
+          >
+            <option value="all">Todos os tipos</option>
+            {activityTypes.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
+          <select
+            value={activityPeriod}
+            onChange={(e) => {
+              setActivityPeriod(e.target.value as '7d' | '30d' | 'all');
+              setActivityLimit(8);
+            }}
+            className="w-full p-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm"
+          >
+            <option value="7d">Últimos 7 dias</option>
+            <option value="30d">Últimos 30 dias</option>
+            <option value="all">Período total</option>
+          </select>
+          <div className="w-full p-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs text-gray-500 flex items-center">
+            {filteredActivity.length} evento(s)
+          </div>
+        </div>
+
         {activityEvents.length === 0 ? (
           <div className="p-8 text-center bg-white dark:bg-gray-800 rounded-[32px] border border-dashed border-gray-200 dark:border-gray-700">
             <p className="text-sm text-gray-400">Nenhuma atividade registrada ainda.</p>
           </div>
+        ) : filteredActivity.length === 0 ? (
+          <div className="p-8 text-center bg-white dark:bg-gray-800 rounded-[32px] border border-dashed border-gray-200 dark:border-gray-700">
+            <p className="text-sm text-gray-400">Nenhuma atividade para os filtros selecionados.</p>
+          </div>
         ) : (
           <div className="space-y-3">
-            {activityEvents.slice(0, 8).map(event => (
+            {filteredActivity.slice(0, activityLimit).map(event => (
               <div key={event.id} className="p-4 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{event.label}</p>
@@ -2409,6 +2861,16 @@ const LibraryScreen = ({ notes, activityEvents }: { notes: Note[]; activityEvent
                 <span className="text-[11px] text-gray-400 whitespace-nowrap">{new Date(event.timestamp).toLocaleString()}</span>
               </div>
             ))}
+
+            {activityLimit < filteredActivity.length && (
+              <button
+                type="button"
+                onClick={() => setActivityLimit(prev => prev + 10)}
+                className="w-full py-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300"
+              >
+                Ver mais atividades
+              </button>
+            )}
           </div>
         )}
       </section>
@@ -3820,6 +4282,10 @@ interface Note {
   reference: string;
   content: string;
   date: string;
+  updatedAt?: string;
+  tags?: string[];
+  notebook?: string;
+  pinned?: boolean;
 }
 
 interface ActivityEvent {
@@ -3887,9 +4353,46 @@ export default function App() {
     const saved = localStorage.getItem(INTERNAL_REASONING_MODE_STORAGE_KEY);
     return saved && isInternalReasoningMode(saved) ? saved : 'auto';
   });
+  const normalizeNote = (raw: any): Note | null => {
+    if (!raw || typeof raw !== 'object') return null;
+    const id = typeof raw.id === 'string' && raw.id.trim() ? raw.id : `${Date.now()}-${Math.random()}`;
+    const reference = typeof raw.reference === 'string' ? raw.reference.trim() : '';
+    const content = typeof raw.content === 'string' ? raw.content.trim() : '';
+    if (!reference || !content) return null;
+
+    const date = typeof raw.date === 'string' && raw.date ? raw.date : new Date().toISOString();
+    const updatedAt = typeof raw.updatedAt === 'string' && raw.updatedAt ? raw.updatedAt : undefined;
+    const tags = Array.isArray(raw.tags)
+      ? raw.tags.filter((tag: unknown): tag is string => typeof tag === 'string' && tag.trim().length > 0).map(tag => tag.trim())
+      : [];
+    const notebook = typeof raw.notebook === 'string' && raw.notebook.trim().length > 0 ? raw.notebook.trim() : 'Geral';
+    const pinned = typeof raw.pinned === 'boolean' ? raw.pinned : false;
+
+    return {
+      id,
+      reference,
+      content,
+      date,
+      updatedAt,
+      tags,
+      notebook,
+      pinned,
+    };
+  };
+
   const [notes, setNotes] = useState<Note[]>(() => {
     const saved = localStorage.getItem('notes');
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map(item => normalizeNote(item))
+        .filter((item): item is Note => item !== null)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    } catch {
+      return [];
+    }
   });
   const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>(() => {
     const saved = localStorage.getItem('activity-events-v1');
@@ -3929,14 +4432,84 @@ export default function App() {
   }, [notes]);
 
   const addNote = (reference: string, content: string) => {
+    const trimmed = content.trim();
+    if (!trimmed) return;
+
+    const now = new Date().toISOString();
     const newNote: Note = {
       id: Date.now().toString(),
       reference,
-      content,
-      date: new Date().toISOString()
+      content: trimmed,
+      date: now,
+      updatedAt: now,
+      tags: [],
+      notebook: 'Geral',
+      pinned: false,
     };
-    setNotes([newNote, ...notes]);
+    setNotes(prev => [newNote, ...prev]);
     trackActivity('note_created', `Nota criada em ${reference}`);
+  };
+
+  const updateNote = (noteId: string, patch: Partial<Pick<Note, 'content' | 'tags' | 'notebook' | 'pinned'>>) => {
+    setNotes(prev => prev.map(note => {
+      if (note.id !== noteId) return note;
+
+      const nextContent = typeof patch.content === 'string' ? patch.content.trim() : note.content;
+      const nextTags = Array.isArray(patch.tags)
+        ? patch.tags.filter(tag => typeof tag === 'string' && tag.trim().length > 0).map(tag => tag.trim())
+        : note.tags || [];
+      const nextNotebook = typeof patch.notebook === 'string' && patch.notebook.trim().length > 0
+        ? patch.notebook.trim()
+        : (note.notebook || 'Geral');
+      const nextPinned = typeof patch.pinned === 'boolean' ? patch.pinned : !!note.pinned;
+
+      return {
+        ...note,
+        content: nextContent,
+        tags: nextTags,
+        notebook: nextNotebook,
+        pinned: nextPinned,
+        updatedAt: new Date().toISOString(),
+      };
+    }));
+    trackActivity('note_updated', 'Nota atualizada');
+  };
+
+  const deleteNote = (noteId: string) => {
+    const found = notes.find(note => note.id === noteId);
+    const confirmed = window.confirm('Deseja excluir esta nota?');
+    if (!confirmed) return;
+    setNotes(prev => prev.filter(note => note.id !== noteId));
+    trackActivity('note_deleted', found ? `Nota excluída em ${found.reference}` : 'Nota excluída');
+  };
+
+  const openNoteReference = (reference: string) => {
+    const match = reference.trim().match(/^(.*)\s+(\d+)(?::(\d+))?$/);
+    if (!match) return;
+
+    const rawBook = match[1].trim();
+    const chapter = parseInt(match[2], 10);
+    const verse = match[3] ? parseInt(match[3], 10) : 1;
+    if (Number.isNaN(chapter) || Number.isNaN(verse)) return;
+
+    const normalizeBook = (value: string) => value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
+
+    const targetBook = BOOKS.find(item => normalizeBook(item.name) === normalizeBook(rawBook));
+    if (!targetBook) return;
+
+    localStorage.setItem('pending-bible-target', JSON.stringify({
+      bookName: targetBook.name,
+      chapter: Math.max(1, Math.min(chapter, targetBook.chapters)),
+      verse: Math.max(1, verse),
+      label: `${targetBook.name} ${chapter}:${Math.max(1, verse)}`,
+    }));
+
+    setScreen('bible');
+    trackActivity('note_open_reference', `Nota aberta em ${reference}`);
   };
 
   const trackActivity = (type: string, label: string) => {
@@ -4215,7 +4788,13 @@ export default function App() {
         return;
       }
 
-      if (Array.isArray(parsed.data.notes)) setNotes(parsed.data.notes);
+      if (Array.isArray(parsed.data.notes)) {
+        const normalizedNotes = parsed.data.notes
+          .map(item => normalizeNote(item))
+          .filter((item): item is Note => item !== null)
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setNotes(normalizedNotes);
+      }
       if (typeof parsed.data.theme === 'string') localStorage.setItem('theme', parsed.data.theme);
       if (typeof parsed.data.colorTheme === 'string' && isColorTheme(parsed.data.colorTheme)) {
         localStorage.setItem(COLOR_THEME_STORAGE_KEY, parsed.data.colorTheme);
@@ -4331,7 +4910,16 @@ export default function App() {
       case 'bible': return <BibleScreen onAddNote={addNote} availableVersions={bibleVersionCodes} />;
       case 'study': return <StudyScreen goalTargets={goalTargets} onApplyGoalProfile={applyGoalProfile} availableVersions={bibleVersionCodes} />;
       case 'confessions': return <ConfessionsScreen />;
-      case 'library': return <LibraryScreen notes={notes} activityEvents={activityEvents} />;
+      case 'library':
+        return (
+          <LibraryScreen
+            notes={notes}
+            activityEvents={activityEvents}
+            onOpenReference={openNoteReference}
+            onUpdateNote={updateNote}
+            onDeleteNote={deleteNote}
+          />
+        );
       case 'settings':
         return (
           <SettingsScreen
