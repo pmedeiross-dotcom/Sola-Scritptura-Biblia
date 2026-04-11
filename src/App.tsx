@@ -92,6 +92,12 @@ interface GitHubRepoFile {
   download_url: string | null;
 }
 
+interface GitHubVersionOption {
+  fileName: string;
+  code: string;
+  url: string;
+}
+
 interface RepoBibleBook {
   name?: string;
   chapters?: unknown[];
@@ -3013,6 +3019,7 @@ const SettingsScreen = ({
   onExportData,
   onImportData,
   onImportBibleVersion,
+  onLoadMissingGithubVersions,
   onImportMissingGithubVersions,
   onImportStrongDictionary,
   onResetData,
@@ -3037,7 +3044,8 @@ const SettingsScreen = ({
   onExportData: () => void;
   onImportData: (file: File) => void;
   onImportBibleVersion: (file: File) => void;
-  onImportMissingGithubVersions: () => void;
+  onLoadMissingGithubVersions: () => Promise<GitHubVersionOption[]>;
+  onImportMissingGithubVersions: (versions: GitHubVersionOption[]) => Promise<void>;
   onImportStrongDictionary: (file: File) => void;
   onResetData: () => void;
   activityEvents: ActivityEvent[];
@@ -3053,6 +3061,10 @@ const SettingsScreen = ({
   bibleVersionCodes: string[];
 }) => {
   const [darkMode, setDarkMode] = useState(document.documentElement.classList.contains('dark'));
+  const [isLoadingRemoteVersions, setIsLoadingRemoteVersions] = useState(false);
+  const [showVersionSelector, setShowVersionSelector] = useState(false);
+  const [availableVersionsToImport, setAvailableVersionsToImport] = useState<GitHubVersionOption[]>([]);
+  const [selectedVersionCodes, setSelectedVersionCodes] = useState<string[]>([]);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const bibleImportInputRef = useRef<HTMLInputElement | null>(null);
   const strongDictionaryInputRef = useRef<HTMLInputElement | null>(null);
@@ -3218,6 +3230,36 @@ const SettingsScreen = ({
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
   };
 
+  const openVersionSelector = async () => {
+    try {
+      setIsLoadingRemoteVersions(true);
+      const options = await onLoadMissingGithubVersions();
+      setAvailableVersionsToImport(options);
+      setSelectedVersionCodes([]);
+      if (options.length > 0) setShowVersionSelector(true);
+    } finally {
+      setIsLoadingRemoteVersions(false);
+    }
+  };
+
+  const toggleVersionSelection = (code: string) => {
+    setSelectedVersionCodes(prev => (
+      prev.includes(code)
+        ? prev.filter(item => item !== code)
+        : [...prev, code]
+    ));
+  };
+
+  const confirmSelectedVersionImport = async () => {
+    const selected = availableVersionsToImport.filter(item => selectedVersionCodes.includes(item.code));
+    if (selected.length === 0) return;
+
+    await onImportMissingGithubVersions(selected);
+    setShowVersionSelector(false);
+    setAvailableVersionsToImport([]);
+    setSelectedVersionCodes([]);
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 pb-24 lg:pb-10 animate-fade-in">
       <section className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
@@ -3360,12 +3402,57 @@ const SettingsScreen = ({
           </button>
 
           <button
-            onClick={onImportMissingGithubVersions}
-            disabled={isImportingBibleVersion}
+            onClick={openVersionSelector}
+            disabled={isImportingBibleVersion || isLoadingRemoteVersions}
             className="w-full py-3 rounded-2xl bg-petrol-500/10 border border-petrol-300 text-petrol-700 dark:text-petrol-200 font-semibold disabled:opacity-60"
           >
-            {isImportingBibleVersion ? 'Sincronizando versões...' : 'Importar versões faltantes do GitHub'}
+            {isLoadingRemoteVersions ? 'Carregando versões...' : 'Importar versão'}
           </button>
+
+          {showVersionSelector && (
+            <div className="rounded-2xl border border-petrol-200 dark:border-petrol-800 bg-petrol-50/40 dark:bg-petrol-900/20 p-4 space-y-3">
+              <p className="text-sm font-semibold text-petrol-800 dark:text-petrol-100">Selecione as versões para importar</p>
+
+              <div className="max-h-52 overflow-y-auto space-y-2 pr-1">
+                {availableVersionsToImport.map(item => {
+                  const checked = selectedVersionCodes.includes(item.code);
+                  return (
+                    <label key={item.code} className="flex items-center gap-2 rounded-xl border border-petrol-100 dark:border-petrol-900 bg-white/80 dark:bg-gray-800/80 px-3 py-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleVersionSelection(item.code)}
+                        className="accent-petrol-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-100">{item.code}</span>
+                    </label>
+                  );
+                })}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowVersionSelector(false);
+                    setSelectedVersionCodes([]);
+                    setAvailableVersionsToImport([]);
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-100 font-semibold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmSelectedVersionImport}
+                  disabled={isImportingBibleVersion || selectedVersionCodes.length === 0}
+                  className="w-full py-2.5 rounded-xl bg-petrol-600 text-white font-semibold disabled:opacity-60"
+                >
+                  Confirmar importação
+                </button>
+              </div>
+            </div>
+          )}
 
           <button
             onClick={() => strongDictionaryInputRef.current?.click()}
@@ -3877,9 +3964,8 @@ export default function App() {
     }
   };
 
-  const importMissingGithubVersions = async () => {
+  const loadMissingGithubVersions = async (): Promise<GitHubVersionOption[]> => {
     try {
-      setIsImportingBibleVersion(true);
       setBibleImportStatus('Consultando versões no GitHub...');
 
       const [stored, listingResponse] = await Promise.all([
@@ -3892,29 +3978,48 @@ export default function App() {
       }
 
       const listing = await listingResponse.json() as GitHubRepoFile[];
-      const remoteFiles = listing
+      const remoteFiles: GitHubVersionOption[] = listing
         .filter(item => item.type === 'file' && /\.json$/i.test(item.name) && Boolean(item.download_url))
         .map(item => ({
           fileName: item.name,
           code: toVersionCodeFromFileName(item.name),
           url: String(item.download_url),
-        }));
+        }))
+        .sort((a, b) => a.code.localeCompare(b.code));
 
       const existingCodes = new Set(stored.map(item => String(item.code || '').toUpperCase()));
       const missing = remoteFiles.filter(item => !existingCodes.has(item.code));
 
       if (missing.length === 0) {
         setBibleImportStatus('Nenhuma versão nova encontrada. Seu app já possui todas as versões do repositório remoto.');
+      } else {
+        setBibleImportStatus(`${missing.length} versão(ões) disponível(is) para importação.`);
+      }
+
+      return missing;
+    } catch (error: any) {
+      console.error('Falha ao consultar versões do GitHub:', error);
+      setBibleImportStatus(`Falha ao listar versões remotas: ${error?.message || 'erro desconhecido'}`);
+      return [];
+    }
+  };
+
+  const importMissingGithubVersions = async (selectedVersions: GitHubVersionOption[]) => {
+    try {
+      if (!Array.isArray(selectedVersions) || selectedVersions.length === 0) {
+        setBibleImportStatus('Nenhuma versão foi selecionada para importação.');
         return;
       }
+
+      setIsImportingBibleVersion(true);
 
       let importedCount = 0;
       const importedCodes: string[] = [];
       const failures: string[] = [];
 
-      for (const item of missing) {
+      for (const item of selectedVersions) {
         try {
-          setBibleImportStatus(`Importando ${item.code} (${importedCount + 1}/${missing.length})...`);
+          setBibleImportStatus(`Importando ${item.code} (${importedCount + 1}/${selectedVersions.length})...`);
           const response = await fetch(item.url);
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -3946,7 +4051,7 @@ export default function App() {
         return;
       }
 
-      const baseMessage = `Importação concluída: ${importedCount}/${missing.length} versões novas (${importedCodes.join(', ')}).`;
+      const baseMessage = `Importação concluída: ${importedCount}/${selectedVersions.length} versão(ões) (${importedCodes.join(', ')}).`;
       setBibleImportStatus(failures.length > 0 ? `${baseMessage} Falhas: ${failures.join(' | ')}` : baseMessage);
     } catch (error: any) {
       console.error('Falha ao sincronizar versões do GitHub:', error);
@@ -4121,6 +4226,7 @@ export default function App() {
             onExportData={exportAppData}
             onImportData={importAppData}
             onImportBibleVersion={importBibleVersionData}
+            onLoadMissingGithubVersions={loadMissingGithubVersions}
             onImportMissingGithubVersions={importMissingGithubVersions}
             onImportStrongDictionary={importStrongDictionaryData}
             onResetData={resetLocalData}
