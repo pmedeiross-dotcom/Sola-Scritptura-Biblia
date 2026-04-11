@@ -3,6 +3,7 @@ import { getStoredConfessions, getStoredDictionaries } from '../../services/db';
 import { WESTMINSTER_CONFESSION } from '../data/westminsterConfession';
 import { HEIDELBERG_CATECHISM } from '../data/heidelbergCatechism';
 import { BELGIC_CONFESSION } from '../data/belgicConfession';
+import strongsOpenScriptures from '../data/strongs-open-scriptures.json';
 
 type Scope = 'chapter' | 'book' | 'bible';
 type VersionCode = string;
@@ -166,6 +167,16 @@ const getStrongDictionaryMap = async (): Promise<Map<string, string>> => {
     }
   } catch {
     // If dictionary is unavailable, analysis still works using occurrence data only.
+  }
+
+  // Built-in fallback imported from OpenScriptures/strongs for offline lexical support.
+  for (const [code, definition] of Object.entries(strongsOpenScriptures as Record<string, string>)) {
+    const normalizedCode = normalizeStrongCode(code);
+    if (!/^[HG]\d+$/.test(normalizedCode)) continue;
+    if (map.has(normalizedCode)) continue;
+    const def = typeof definition === 'string' ? definition.trim() : '';
+    if (!def) continue;
+    map.set(normalizedCode, def);
   }
 
   strongDictionaryCache = map;
