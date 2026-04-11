@@ -155,6 +155,39 @@ export interface BibleContent {
   crossReferences?: string[];
 }
 
+const LOCAL_LLM_URL = (import.meta.env.VITE_LOCAL_LLM_URL as string | undefined) || 'http://localhost:11434/api/generate';
+const LOCAL_LLM_MODEL = (import.meta.env.VITE_LOCAL_LLM_MODEL as string | undefined) || 'gemma2:2b';
+
+const extractFirstJsonBlock = (raw: string) => {
+  const start = raw.indexOf('{');
+  const end = raw.lastIndexOf('}');
+  if (start >= 0 && end > start) return raw.slice(start, end + 1);
+  return raw;
+};
+
+const askLocalGemma = async (prompt: string, temperature = 0.35): Promise<string> => {
+  const response = await fetch(LOCAL_LLM_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: LOCAL_LLM_MODEL,
+      prompt,
+      stream: false,
+      options: {
+        temperature,
+        num_predict: 512,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`LLM local indisponível (${response.status})`);
+  }
+
+  const data = await response.json() as { response?: string };
+  return String(data?.response || '').trim();
+};
+
 // Função para ler capítulo localmente
 export const getLocalBibleChapter = async (book: string, chapter: number, version: string = 'ARC'): Promise<{ verse: number, text: string }[]> => {
   if (version === 'ARC') {
@@ -237,27 +270,102 @@ export const getBibleContent = async (reference: string, version: string = 'ARC'
 };
 
 export const getTheologicalAnalysis = async (text: string): Promise<string> => {
-  const prompt = `Analise o seguinte texto bíblico sob uma perspectiva reformada histórica (Sola Scriptura). 
-  Destaque as doutrinas da graça, a soberania de Deus e a aplicação prática para a vida cristã:
-  
-  "${text}"`;
+  const prompt = `Você é um assistente bíblico reformado. Analise o texto abaixo de forma clara e objetiva.
 
-  // IA removida para evitar erro de build
-  return "Análise teológica não disponível. Funcionalidade de IA removida.";
+Regras:
+- Foque em soberania de Deus, graça, fé, arrependimento e aplicação prática.
+- Não invente referências.
+- Responda em português com 3 seções: "Resumo", "Doutrina" e "Aplicação".
+
+Texto bíblico:
+"""
+${text}
+"""`;
+
+  try {
+    const answer = await askLocalGemma(prompt, 0.3);
+    if (!answer) throw new Error('resposta vazia');
+    return answer;
+  } catch {
+    return 'Análise teológica indisponível no momento. Verifique se o Ollama está rodando com o modelo gemma2:2b.';
+  }
 };
 
 export const searchBible = async (query: string): Promise<{ reference: string, excerpt: string }[]> => {
-  const prompt = `Atue como um motor de busca bíblico. Para a consulta "${query}", retorne uma lista de até 10 referências bíblicas relevantes com um pequeno trecho do texto.
-  Retorne APENAS um array JSON de objetos com as chaves: "reference" e "excerpt".`;
-    // IA removida para evitar erro de build
+  const prompt = `Atue como um motor de busca bíblico para a consulta: "${query}".
+
+Retorne APENAS um objeto JSON válido no formato:
+{
+  "results": [
+    { "reference": "Livro 1:1", "excerpt": "trecho curto" }
+  ]
+}
+
+Limites:
+- No máximo 10 resultados
+- Excerpt com até 180 caracteres
+- Sem texto fora do JSON`;
+
+  try {
+    const raw = await askLocalGemma(prompt, 0.2);
+    const parsed = JSON.parse(extractFirstJsonBlock(raw)) as { results?: Array<{ reference?: string; excerpt?: string }> };
+    const results = Array.isArray(parsed.results) ? parsed.results : [];
+    return results
+      .map(item => ({
+        reference: String(item.reference || '').trim(),
+        excerpt: String(item.excerpt || '').trim(),
+      }))
+      .filter(item => item.reference.length > 0 && item.excerpt.length > 0)
+      .slice(0, 10);
+  } catch {
     return [];
+  }
   };
 
 export const generateReadingPlan = async (topic: string): Promise<{ title: string, days: { day: number, reference: string, focus: string }[] }> => {
-  const prompt = `Crie um plano de leitura bíblica de 7 dias sobre o tema "${topic}" sob uma perspectiva reformada.
-  Retorne APENAS um objeto JSON com as chaves: "title" (título do plano) e "days" (um array de 7 objetos com "day", "reference" e "focus" - uma breve explicação do porquê desta leitura).`;
-    // IA removida para evitar erro de build
-    return { title: "Plano Personalizado", days: [] };
+  const prompt = `Crie um plano de leitura bíblica de 7 dias sobre "${topic}".
+
+Retorne APENAS um objeto JSON válido no formato:
+{
+  "title": "texto",
+  "days": [
+    { "day": 1, "reference": "Livro 1", "focus": "explicação breve" }
+  ]
+}
+
+Regras:
+- Exatamente 7 itens em days
+- Referências bíblicas reais
+- focus curto e prático
+- Sem texto fora do JSON`;
+
+  try {
+    const raw = await askLocalGemma(prompt, 0.25);
+    const parsed = JSON.parse(extractFirstJsonBlock(raw)) as {
+      title?: string;
+      days?: Array<{ day?: number; reference?: string; focus?: string }>;
+    };
+
+    const days = (Array.isArray(parsed.days) ? parsed.days : [])
+      .map((item, index) => ({
+        day: Number(item.day) || (index + 1),
+        reference: String(item.reference || '').trim(),
+        focus: String(item.focus || '').trim(),
+      }))
+      .filter(item => item.reference.length > 0 && item.focus.length > 0)
+      .slice(0, 7);
+
+    if (days.length === 0) {
+      return { title: 'Plano Personalizado', days: [] };
+    }
+
+    return {
+      title: String(parsed.title || `Plano sobre ${topic}`),
+      days,
+    };
+  } catch {
+    return { title: 'Plano Personalizado', days: [] };
+  }
   };
 
 export const BOOKS = [
