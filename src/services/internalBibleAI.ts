@@ -899,110 +899,100 @@ export const runInternalBibleAI = async (params: {
 
 export const formatInternalBibleAIReportMarkdown = (report: InternalBibleAIReport): string => {
   if (report.scannedVerses === 0 || report.termReports.length === 0) {
-    return `## Modelo Interno de Estudo\n\n${report.scopeLabel}\n\nNenhum dado disponivel para analisar.`;
+    return [
+      '## Estudo Interno',
+      '',
+      `Nao consegui analisar o escopo solicitado (${report.scopeLabel}) com dados suficientes.`,
+      'Tente conferir a referencia, mudar o escopo ou selecionar outra versao.'
+    ].join('\n');
   }
+
+  const terms = report.termReports.map(item => item.term);
+  const totalOccurrences = report.termReports.reduce((acc, item) => acc + item.occurrences, 0);
+  const termsWithHits = report.termReports.filter(item => item.occurrences > 0);
+  const termsWithoutHits = report.termReports.filter(item => item.occurrences === 0);
+
+  const topAxes = report.theologyProfile.slice(0, 3);
+  const topCross = report.crossReferences.slice(0, 4);
+  const topStrong = report.strongReports.slice(0, 3);
+  const topKnowledge = report.knowledgeInsights.slice(0, 3);
+  const topContext = report.contextSnippets.slice(0, 2);
+
+  const bibleSignal = topAxes.reduce((acc, axis) => acc + axis.bibleHits, 0);
+  const knowledgeSignal = topAxes.reduce((acc, axis) => acc + axis.knowledgeHits, 0);
+
+  const summaryLead = totalOccurrences > 0
+    ? `Analisei ${report.scannedVerses} versiculos em ${report.scopeLabel} (${report.version}) e encontrei ocorrencias relevantes para ${termsWithHits.map(item => item.term).join(', ')}.`
+    : `Analisei ${report.scannedVerses} versiculos em ${report.scopeLabel} (${report.version}), mas os termos pesquisados (${terms.join(', ')}) nao apareceram diretamente neste escopo.`;
+
+  const cautionLine = totalOccurrences === 0 && topAxes.length > 0
+    ? 'Mesmo sem ocorrencia literal dos termos, o perfil teologico abaixo foi inferido por proximidade conceitual e por correlacao com o conhecimento interno do app.'
+    : '';
+
+  const balanceLine = knowledgeSignal > bibleSignal
+    ? 'Nesta leitura, o peso interpretativo veio mais de simbolos de fe/notas do que de ocorrencias textuais diretas do trecho.'
+    : 'Nesta leitura, a inferencia ficou majoritariamente ancorada no proprio texto biblico analisado.';
+
+  const axisLine = topAxes.length > 0
+    ? `Os eixos que mais se destacaram foram: ${topAxes.map(axis => axis.title).join(', ')}.`
+    : 'Nao houve eixo teologico dominante suficiente para uma sintese segura.';
+
+  const referencesLine = termsWithHits.length > 0
+    ? `As referencias mais fortes foram: ${termsWithHits.flatMap(item => item.references.slice(0, 3)).slice(0, 6).join('; ')}.`
+    : 'Como nao houve correspondencia literal dos termos, recomendo ampliar o escopo para o livro inteiro ou Biblia inteira.';
 
   const lines: string[] = [];
-  lines.push('## Modelo Interno de Estudo');
+  lines.push('## Estudo Interno');
   lines.push('');
-  lines.push(`Escopo: ${report.scopeLabel}`);
-  lines.push(`Versao: ${report.version}`);
-  lines.push(`Expansao semantica: ${report.options.enableSemanticExpansion ? 'ativada' : 'desativada'}`);
-  lines.push(`Stemming: ${report.options.enableStemming ? 'ativado' : 'desativado'}`);
-  lines.push(`Analise lexical Strong: ${report.options.enableStrongLexical ? 'ativada' : 'desativada'}`);
-  lines.push(`Inteligencia com simbolos/notas: ${report.options.enableAppKnowledge ? 'ativada' : 'desativada'}`);
-  lines.push(`Versiculos analisados: ${report.scannedVerses}`);
-  lines.push('');
-  lines.push('### Ocorrencias por termo');
-  lines.push('');
+  lines.push(summaryLead);
+  if (cautionLine) lines.push(cautionLine);
+  lines.push(axisLine);
+  lines.push(balanceLine);
+  lines.push(referencesLine);
 
-  for (const item of report.termReports) {
-    lines.push(`- **${item.term}** (${item.mode === 'phrase' ? 'expressao exata' : 'termo'}): ${item.occurrences} ocorrencias em ${item.verses} versiculos.`);
-    if (item.expandedWith.length > 0) {
-      lines.push(`  Expansao semantica: ${item.expandedWith.slice(0, 8).join(', ')}${item.expandedWith.length > 8 ? ' ...' : ''}`);
-    }
-    if (item.references.length > 0) {
-      lines.push(`  Referencias: ${item.references.slice(0, 12).join('; ')}${item.references.length > 12 ? ' ...' : ''}`);
-    }
-    if (item.rankedReferences.length > 0) {
-      lines.push(`  Ranking: ${item.rankedReferences.slice(0, 5).map(r => `${r.reference} (${r.score})`).join('; ')}`);
-    }
+  if (termsWithoutHits.length > 0) {
+    lines.push('');
+    lines.push(`Termos sem ocorrencia direta neste escopo: ${termsWithoutHits.map(item => item.term).join(', ')}.`);
   }
 
   lines.push('');
-  lines.push('### Analise Lexica Strong (cruzamento com termos)');
-  lines.push('');
-
-  if (report.strongReports.length === 0) {
-    lines.push('- Nenhuma ocorrencia Strong encontrada no escopo ou versao selecionados.');
+  lines.push('### Sintese Teologica');
+  if (topAxes.length === 0) {
+    lines.push('Nao foi possivel construir uma sintese teologica robusta com os dados atuais.');
   } else {
-    for (const item of report.strongReports.slice(0, 20)) {
-      lines.push(`- **${item.code}**: ${item.occurrences} ocorrencias em ${item.verses} versiculos.`);
-      if (item.cooccurringTerms.length > 0) {
-        lines.push(`  Coocorrencia com termos: ${item.cooccurringTerms.map(term => `${term.term} (${term.verses})`).join('; ')}`);
-      }
-      if (item.definition) {
-        const compactDef = item.definition.length > 240 ? `${item.definition.slice(0, 237)}...` : item.definition;
-        lines.push(`  Definicao lexica: ${compactDef}`);
-      }
-      if (item.references.length > 0) {
-        lines.push(`  Referencias: ${item.references.join('; ')}`);
-      }
+    for (const axis of topAxes) {
+      const evidence = axis.evidence.slice(0, 3).join('; ');
+      lines.push(`- ${axis.title}: score ${axis.score}. Evidencias principais: ${evidence || 'sem evidencia textual curta disponivel'}.`);
     }
   }
 
   lines.push('');
-  lines.push('### Correlacao com Simbolos de Fe e Notas');
-  lines.push('');
-
-  if (report.knowledgeInsights.length === 0) {
-    lines.push('- Nenhuma correlacao encontrada nos simbolos de fe/notas para os termos pesquisados.');
+  lines.push('### Apoios de Estudo');
+  if (topStrong.length > 0) {
+    lines.push(`- Strong: ${topStrong.map(item => `${item.code} (${item.occurrences} ocorrencias)`).join('; ')}.`);
   } else {
-    for (const item of report.knowledgeInsights.slice(0, 20)) {
-      lines.push(`- **${item.reference}** [${item.sourceType === 'confession' ? 'Simbolo de Fe' : 'Nota'} | ${item.sourceName}] (score ${item.score})`);
-      lines.push(`  Termos relacionados: ${item.matchedTerms.join(', ')}`);
-      lines.push(`  Trecho: ${item.excerpt}`);
-    }
+    lines.push('- Strong: nao houve correspondencias lexicas relevantes neste escopo.');
   }
 
-  lines.push('');
-  lines.push('### Ranking Teologico por Eixo');
-  lines.push('');
-
-  if (report.theologyProfile.length === 0) {
-    lines.push('- Nao foi possivel calcular o perfil teologico no escopo atual.');
+  if (topKnowledge.length > 0) {
+    lines.push(`- Simbolos de Fe/Notas: ${topKnowledge.map(item => `${item.reference} (${item.sourceName})`).join('; ')}.`);
   } else {
-    for (const axis of report.theologyProfile.slice(0, 6)) {
-      lines.push(`- **${axis.title}**: score ${axis.score} (Biblia ${axis.bibleHits} | Conhecimento do app ${axis.knowledgeHits})`);
-      if (axis.evidence.length > 0) {
-        lines.push(`  Evidencias: ${axis.evidence.join('; ')}`);
-      }
-    }
+    lines.push('- Simbolos de Fe/Notas: nenhuma correlacao direta encontrada para esta consulta.');
   }
 
-  lines.push('');
-  lines.push('### Referencias cruzadas (coocorrencia de termos)');
-  lines.push('');
-
-  if (report.crossReferences.length === 0) {
-    lines.push('- Nenhuma coocorrencia encontrada para os termos informados.');
+  if (topCross.length > 0) {
+    lines.push(`- Referencias cruzadas: ${topCross.join('; ')}.`);
   } else {
-    for (const ref of report.crossReferences.slice(0, 20)) {
-      lines.push(`- ${ref}`);
-    }
+    lines.push('- Referencias cruzadas: sem coocorrencias suficientes para formar conexoes fortes.');
+  }
+
+  if (topContext.length > 0) {
+    lines.push(`- Contexto imediato: ${topContext.map(item => item.replace(/\s*\|\s*/g, ' | ')).join(' || ')}.`);
   }
 
   lines.push('');
-  lines.push('### Contexto imediato (versiculo anterior e posterior)');
-  lines.push('');
-
-  if (report.contextSnippets.length === 0) {
-    lines.push('- Nenhum contexto disponivel para os resultados encontrados.');
-  } else {
-    for (const snippet of report.contextSnippets) {
-      lines.push(`- ${snippet}`);
-    }
-  }
+  lines.push('### Proximo Passo Sugerido');
+  lines.push('Refaca a consulta com um termo biblicamente central (ou com expressao exata entre aspas) e compare o resultado entre capitulo, livro e Biblia inteira para obter uma leitura mais equilibrada.');
 
   return lines.join('\n');
 };
