@@ -84,7 +84,8 @@ const getLocalBibleChapterLazy = async (book: string, chapter: number, version?:
   return service.getLocalBibleChapter(book, chapter, version);
 };
 
-const GITHUB_BIBLES_API = 'https://api.github.com/repos/damarals/biblias/contents/inst/json';
+const DEFAULT_GITHUB_BIBLES_API = 'https://api.github.com/repos/pmedeiross-dotcom/Sola-Scritptura-Biblia/contents/versions';
+const GITHUB_BIBLES_API = (import.meta.env.VITE_BIBLE_VERSIONS_API as string | undefined) || DEFAULT_GITHUB_BIBLES_API;
 
 interface GitHubRepoFile {
   name: string;
