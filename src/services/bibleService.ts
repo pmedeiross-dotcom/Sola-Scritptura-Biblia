@@ -155,82 +155,94 @@ export interface BibleContent {
   crossReferences?: string[];
 }
 
-const LOCAL_LLM_URL = (import.meta.env.VITE_LOCAL_LLM_URL as string | undefined) || 'http://localhost:11434/api/generate';
-const LOCAL_LLM_MODEL = (import.meta.env.VITE_LOCAL_LLM_MODEL as string | undefined) || 'gemma2:2b';
-const REMOTE_LLM_URL = (import.meta.env.VITE_REMOTE_LLM_URL as string | undefined) || '';
-const REMOTE_LLM_MODEL = (import.meta.env.VITE_REMOTE_LLM_MODEL as string | undefined) || 'gemma2:2b';
-const REMOTE_LLM_TOKEN = (import.meta.env.VITE_REMOTE_LLM_TOKEN as string | undefined) || '';
+const STOP_WORDS = new Set([
+  'a', 'o', 'e', 'de', 'da', 'do', 'das', 'dos', 'em', 'na', 'no', 'nas', 'nos',
+  'para', 'por', 'com', 'sem', 'que', 'se', 'um', 'uma', 'ao', 'aos', 'as', 'os',
+  'eu', 'tu', 'ele', 'ela', 'nos', 'vos', 'eles', 'elas', 'como', 'mais', 'mas',
+  'foi', 'era', 'ser', 'tem', 'ha', 'sao', 'lhe', 'isso', 'isto', 'este', 'essa',
+]);
 
-const extractFirstJsonBlock = (raw: string) => {
-  const start = raw.indexOf('{');
-  const end = raw.lastIndexOf('}');
-  if (start >= 0 && end > start) return raw.slice(start, end + 1);
-  return raw;
+const TOPIC_PLAN_TEMPLATES: Array<{ key: string; title: string; refs: string[]; focus: string[] }> = [
+  {
+    key: 'oracao',
+    title: 'Plano de 7 Dias: Vida de Oração',
+    refs: ['Mateus 6:9', 'Lucas 11:9', 'Salmos 5:3', 'Filipenses 4:6', '1 Tessalonicenses 5:17', 'Hebreus 4:16', 'Tiago 5:16'],
+    focus: ['Dependência diária de Deus', 'Perseverança no pedir', 'Buscar ao Senhor no início do dia', 'Ansiedade entregue em oração', 'Constância espiritual', 'Confiança no trono da graça', 'Intercessão e comunhão']
+  },
+  {
+    key: 'graca',
+    title: 'Plano de 7 Dias: Graça e Salvação',
+    refs: ['Efésios 2:8', 'Romanos 3:23', 'Romanos 5:8', 'Tito 3:5', 'João 1:16', '2 Coríntios 12:9', 'Hebreus 12:15'],
+    focus: ['Salvação como dom', 'Realidade do pecado', 'Amor redentor de Cristo', 'Nova vida pela misericórdia', 'Plenitude da graça', 'Força na fraqueza', 'Permanecer na graça']
+  },
+  {
+    key: 'fe',
+    title: 'Plano de 7 Dias: Caminho de Fé',
+    refs: ['Hebreus 11:1', 'Romanos 10:17', 'Marcos 9:24', 'Salmos 46:1', 'Provérbios 3:5', '2 Coríntios 5:7', 'Judas 1:20'],
+    focus: ['Natureza da fé bíblica', 'Fé alimentada pela Palavra', 'Fé sincera em meio à luta', 'Refúgio em Deus', 'Confiar além da lógica', 'Andar por fé', 'Fortalecer-se no Espírito']
+  },
+];
+
+const hashText = (value: string) => {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
 };
 
-const askLocalGemma = async (prompt: string, temperature = 0.35): Promise<string> => {
-  const response = await fetch(LOCAL_LLM_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: LOCAL_LLM_MODEL,
-      prompt,
-      stream: false,
-      options: {
-        temperature,
-        num_predict: 512,
-      },
-    }),
-  });
+const toTokens = (value: string) => normalize(value)
+  .split(/[^a-z0-9]+/)
+  .filter(token => token.length > 2 && !STOP_WORDS.has(token));
 
-  if (!response.ok) {
-    throw new Error(`LLM local indisponível (${response.status})`);
+const extractKeyTerms = (value: string, limit = 4) => {
+  const counts = new Map<string, number>();
+  for (const token of toTokens(value)) {
+    counts.set(token, (counts.get(token) || 0) + 1);
   }
-
-  const data = await response.json() as { response?: string };
-  return String(data?.response || '').trim();
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(entry => entry[0]);
 };
 
-const askRemoteGemma = async (prompt: string, temperature = 0.35): Promise<string> => {
-  if (!REMOTE_LLM_URL) {
-    throw new Error('Endpoint remoto não configurado');
-  }
+const parseVerseLines = (value: string) => {
+  return value
+    .replace(/\r/g, '')
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const match = line.match(/^(\d+)[\.:]?\s+(.+)$/);
+      return match ? { verse: parseInt(match[1], 10), text: match[2].trim() } : null;
+    })
+    .filter((item): item is { verse: number; text: string } => item !== null);
+};
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+const resolveReferenceText = async (reference: string) => {
+  const match = reference.match(/^(.*)\s(\d+)(?::(\d+))?$/);
+  if (!match) return null;
+
+  const book = match[1].trim();
+  const chapter = parseInt(match[2], 10);
+  const verse = match[3] ? parseInt(match[3], 10) : null;
+  if (Number.isNaN(chapter)) return null;
+
+  const chapterVerses = await getLocalBibleChapter(book, chapter, 'ARC');
+  if (chapterVerses.length === 0) return null;
+
+  const picked = verse ? chapterVerses.find(item => item.verse === verse) : chapterVerses[0];
+  if (!picked) return null;
+
+  return {
+    reference,
+    excerpt: picked.text.length > 180 ? `${picked.text.slice(0, 177)}...` : picked.text,
   };
-
-  if (REMOTE_LLM_TOKEN) {
-    headers.Authorization = `Bearer ${REMOTE_LLM_TOKEN}`;
-  }
-
-  const response = await fetch(REMOTE_LLM_URL, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      model: REMOTE_LLM_MODEL,
-      prompt,
-      stream: false,
-      options: {
-        temperature,
-        num_predict: 512,
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`LLM remoto indisponível (${response.status})`);
-  }
-
-  const data = await response.json() as { response?: string };
-  return String(data?.response || '').trim();
 };
 
-const askGemma = async (prompt: string, temperature = 0.35): Promise<string> => {
-  if (REMOTE_LLM_URL) {
-    return askRemoteGemma(prompt, temperature);
-  }
-  return askLocalGemma(prompt, temperature);
+const findPlanTemplate = (topic: string) => {
+  const normalizedTopic = normalize(topic);
+  return TOPIC_PLAN_TEMPLATES.find(template => normalizedTopic.includes(template.key));
 };
 
 // Função para ler capítulo localmente
@@ -315,102 +327,139 @@ export const getBibleContent = async (reference: string, version: string = 'ARC'
 };
 
 export const getTheologicalAnalysis = async (text: string): Promise<string> => {
-  const prompt = `Você é um assistente bíblico reformado. Analise o texto abaixo de forma clara e objetiva.
+  const verses = parseVerseLines(text);
+  const opening = verses[0]?.text || text.split('\n')[0] || text;
+  const themes = extractKeyTerms(text, 5);
+  const hash = hashText(text);
 
-Regras:
-- Foque em soberania de Deus, graça, fé, arrependimento e aplicação prática.
-- Não invente referências.
-- Responda em português com 3 seções: "Resumo", "Doutrina" e "Aplicação".
+  const intros = [
+    'O trecho apresenta um movimento claro de revelação, correção e esperança.',
+    'A passagem destaca a iniciativa de Deus e a resposta da fé no cotidiano.',
+    'O texto conduz o coração para confiar mais em Deus do que em si mesmo.'
+  ];
+  const doctrinalOpeners = [
+    'Doutrinariamente, vemos a centralidade da graça e da soberania de Deus.',
+    'Numa leitura reformada, o texto afirma que Deus governa meios e fins.',
+    'Teologicamente, a passagem sustenta a dependência total da obra do Senhor.'
+  ];
+  const applications = [
+    'Na prática, isso nos chama a obediência humilde e perseverante.',
+    'Como aplicação, somos convidados a trocar autossuficiência por oração.',
+    'Pastoralmente, o texto aponta para arrependimento sincero e vida piedosa.'
+  ];
 
-Texto bíblico:
-"""
-${text}
-"""`;
+  const selectedIntro = intros[hash % intros.length];
+  const selectedDoctrine = doctrinalOpeners[hash % doctrinalOpeners.length];
+  const selectedApplication = applications[hash % applications.length];
+  const keywordLine = themes.length > 0
+    ? `Termos dominantes observados: ${themes.join(', ')}.`
+    : 'Termos dominantes observados: fé, graça, obediência e esperança.';
 
-  try {
-    const answer = await askGemma(prompt, 0.3);
-    if (!answer) throw new Error('resposta vazia');
-    return answer;
-  } catch {
-    return 'Análise teológica indisponível no momento. Verifique se o Ollama está rodando com o modelo gemma2:2b.';
-  }
+  return [
+    '### Resumo',
+    selectedIntro,
+    `A ênfase principal aparece logo no início: "${opening}"`,
+    '',
+    '### Doutrina',
+    selectedDoctrine,
+    keywordLine,
+    'Esse padrão reforça a visão bíblica de que a transformação do crente é fruto da ação de Deus.',
+    '',
+    '### Aplicação',
+    selectedApplication,
+    'Passo prático para hoje: escolha um versículo do capítulo, ore sobre ele e pratique uma obediência concreta ainda hoje.'
+  ].join('\n');
 };
 
 export const searchBible = async (query: string): Promise<{ reference: string, excerpt: string }[]> => {
-  const prompt = `Atue como um motor de busca bíblico para a consulta: "${query}".
+  const normalizedQuery = normalize(query);
+  const tokens = toTokens(query);
+  if (normalizedQuery.length === 0 || tokens.length === 0) return [];
 
-Retorne APENAS um objeto JSON válido no formato:
-{
-  "results": [
-    { "reference": "Livro 1:1", "excerpt": "trecho curto" }
-  ]
-}
+  const topicalRefs: Array<{ key: string; refs: string[] }> = [
+    { key: 'oracao', refs: ['Mateus 6:9', 'Filipenses 4:6', '1 Tessalonicenses 5:17'] },
+    { key: 'graca', refs: ['Efésios 2:8', 'Romanos 5:8', 'Tito 3:5'] },
+    { key: 'fe', refs: ['Hebreus 11:1', 'Romanos 10:17', '2 Coríntios 5:7'] },
+    { key: 'ansiedade', refs: ['Filipenses 4:6', '1 Pedro 5:7', 'Mateus 6:34'] },
+    { key: 'esperanca', refs: ['Romanos 15:13', 'Lamentações 3:21', 'Hebreus 10:23'] },
+  ];
 
-Limites:
-- No máximo 10 resultados
-- Excerpt com até 180 caracteres
-- Sem texto fora do JSON`;
-
-  try {
-    const raw = await askGemma(prompt, 0.2);
-    const parsed = JSON.parse(extractFirstJsonBlock(raw)) as { results?: Array<{ reference?: string; excerpt?: string }> };
-    const results = Array.isArray(parsed.results) ? parsed.results : [];
-    return results
-      .map(item => ({
-        reference: String(item.reference || '').trim(),
-        excerpt: String(item.excerpt || '').trim(),
-      }))
-      .filter(item => item.reference.length > 0 && item.excerpt.length > 0)
-      .slice(0, 10);
-  } catch {
-    return [];
+  const matchedTopic = topicalRefs.find(item => normalizedQuery.includes(item.key));
+  if (matchedTopic) {
+    const results = await Promise.all(matchedTopic.refs.map(resolveReferenceText));
+    return results.filter((item): item is { reference: string; excerpt: string } => item !== null).slice(0, 10);
   }
+
+  const curatedBooks = ['Salmos', 'Mateus', 'João', 'Romanos', 'Efésios', 'Provérbios', 'Gênesis'];
+  const scored: Array<{ reference: string; excerpt: string; score: number }> = [];
+
+  for (const bookName of curatedBooks) {
+    const bookInfo = BOOKS.find(item => item.name === bookName);
+    if (!bookInfo) continue;
+
+    for (let chapter = 1; chapter <= bookInfo.chapters; chapter += 1) {
+      const verses = await getLocalBibleChapter(bookName, chapter, 'ARC');
+      if (verses.length === 0) continue;
+
+      for (const verse of verses) {
+        const normalizedVerse = normalize(verse.text);
+        let score = 0;
+        for (const token of tokens) {
+          if (normalizedVerse.includes(token)) score += 1;
+        }
+        if (score === 0) continue;
+
+        scored.push({
+          reference: `${bookName} ${chapter}:${verse.verse}`,
+          excerpt: verse.text.length > 180 ? `${verse.text.slice(0, 177)}...` : verse.text,
+          score,
+        });
+      }
+    }
+  }
+
+  return scored
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10)
+    .map(item => ({ reference: item.reference, excerpt: item.excerpt }));
   };
 
 export const generateReadingPlan = async (topic: string): Promise<{ title: string, days: { day: number, reference: string, focus: string }[] }> => {
-  const prompt = `Crie um plano de leitura bíblica de 7 dias sobre "${topic}".
+  const template = findPlanTemplate(topic);
 
-Retorne APENAS um objeto JSON válido no formato:
-{
-  "title": "texto",
-  "days": [
-    { "day": 1, "reference": "Livro 1", "focus": "explicação breve" }
-  ]
-}
-
-Regras:
-- Exatamente 7 itens em days
-- Referências bíblicas reais
-- focus curto e prático
-- Sem texto fora do JSON`;
-
-  try {
-    const raw = await askGemma(prompt, 0.25);
-    const parsed = JSON.parse(extractFirstJsonBlock(raw)) as {
-      title?: string;
-      days?: Array<{ day?: number; reference?: string; focus?: string }>;
-    };
-
-    const days = (Array.isArray(parsed.days) ? parsed.days : [])
-      .map((item, index) => ({
-        day: Number(item.day) || (index + 1),
-        reference: String(item.reference || '').trim(),
-        focus: String(item.focus || '').trim(),
-      }))
-      .filter(item => item.reference.length > 0 && item.focus.length > 0)
-      .slice(0, 7);
-
-    if (days.length === 0) {
-      return { title: 'Plano Personalizado', days: [] };
-    }
-
+  if (template) {
     return {
-      title: String(parsed.title || `Plano sobre ${topic}`),
-      days,
+      title: template.title,
+      days: template.refs.map((reference, index) => ({
+        day: index + 1,
+        reference,
+        focus: template.focus[index] || 'Medite no texto e aplique uma verdade prática hoje.',
+      })),
     };
-  } catch {
-    return { title: 'Plano Personalizado', days: [] };
   }
+
+  const genericRefs = ['Salmos 1:1', 'João 15:5', 'Romanos 12:2', 'Mateus 6:33', 'Provérbios 3:5', 'Hebreus 11:6', 'Apocalipse 21:5'];
+  const genericFocus = [
+    'Comece firmando sua vida na Palavra de Deus.',
+    'Permaneça em Cristo e busque fruto espiritual.',
+    'Renove a mente para discernir a vontade do Senhor.',
+    'Priorize o Reino de Deus no cotidiano.',
+    'Confie no Senhor de todo o coração.',
+    'Caminhe por fé mesmo em dias difíceis.',
+    'Olhe para a esperança final em Cristo.'
+  ];
+
+  const topicTerms = extractKeyTerms(topic, 3);
+  const suffix = topicTerms.length > 0 ? ` (${topicTerms.join(', ')})` : '';
+
+  return {
+    title: `Plano de 7 Dias sobre ${topic}${suffix}`,
+    days: genericRefs.map((reference, index) => ({
+      day: index + 1,
+      reference,
+      focus: genericFocus[index],
+    })),
+  };
   };
 
 export const BOOKS = [
