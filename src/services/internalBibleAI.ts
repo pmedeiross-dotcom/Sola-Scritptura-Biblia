@@ -4,6 +4,7 @@ import { WESTMINSTER_CONFESSION } from '../data/westminsterConfession';
 import { HEIDELBERG_CATECHISM } from '../data/heidelbergCatechism';
 import { BELGIC_CONFESSION } from '../data/belgicConfession';
 import strongsOpenScriptures from '../data/strongs-open-scriptures.json';
+import { translateStrongDefinitionToPtBr } from './strongsTranslation';
 
 type Scope = 'chapter' | 'book' | 'bible';
 type VersionCode = string;
@@ -176,7 +177,7 @@ const getStrongDictionaryMap = async (): Promise<Map<string, string>> => {
     if (map.has(normalizedCode)) continue;
     const def = typeof definition === 'string' ? definition.trim() : '';
     if (!def) continue;
-    map.set(normalizedCode, def);
+    map.set(normalizedCode, translateStrongDefinitionToPtBr(def));
   }
 
   strongDictionaryCache = map;

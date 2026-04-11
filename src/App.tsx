@@ -39,6 +39,7 @@ import { BOOKS } from './services/bibleCatalog';
 import type { BibleContent } from './services/bibleService';
 import { getPericopeSections } from './services/pericopeData';
 import { formatInternalBibleAIReportMarkdown, runInternalBibleAI } from './services/internalBibleAI';
+import { translateStrongDefinitionToPtBr } from './services/strongsTranslation';
 import { WESTMINSTER_CONFESSION } from './data/westminsterConfession';
 import { HEIDELBERG_CATECHISM } from './data/heidelbergCatechism';
 import { BELGIC_CONFESSION } from './data/belgicConfession';
@@ -179,8 +180,8 @@ const mapBundledStrongDictionaryToEntries = (): DictionaryEntry[] => {
     .map(([code, definition]) => ({
       id: code,
       word: code,
-      definition: String(definition || '').trim(),
-      source: 'OpenScriptures Strong',
+      definition: translateStrongDefinitionToPtBr(String(definition || '').trim()),
+      source: 'OpenScriptures Strong (pt-BR auto)',
       category: code.startsWith('G') ? 'grego' : code.startsWith('H') ? 'hebraico' : 'strong'
     }))
     .filter(entry => entry.definition.length > 0);
