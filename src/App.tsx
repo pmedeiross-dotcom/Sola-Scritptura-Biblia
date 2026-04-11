@@ -84,6 +84,78 @@ const getLocalBibleChapterLazy = async (book: string, chapter: number, version?:
   return service.getLocalBibleChapter(book, chapter, version);
 };
 
+const GITHUB_BIBLES_API = 'https://api.github.com/repos/damarals/biblias/contents/inst/json';
+
+interface GitHubRepoFile {
+  name: string;
+  type: string;
+  download_url: string | null;
+}
+
+interface RepoBibleBook {
+  name?: string;
+  chapters?: unknown[];
+}
+
+interface ImportedVerse {
+  book: string;
+  chapter: number;
+  verse: number;
+  text: string;
+  version: string;
+}
+
+const normalizeKey = (value: string) => value
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .trim();
+
+const bookNameIndex = new Map(BOOKS.map(book => [normalizeKey(book.name), book.name]));
+
+const normalizeBookNameFromCatalog = (bookName: string) => {
+  const normalized = bookNameIndex.get(normalizeKey(bookName));
+  return normalized || bookName;
+};
+
+const toVersionCodeFromFileName = (fileName: string) => {
+  return fileName
+    .replace(/\.json$/i, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9_-]/g, '')
+    .slice(0, 24);
+};
+
+const parseRepoBibleToVerses = (payload: unknown, versionCode: string): ImportedVerse[] => {
+  if (!Array.isArray(payload)) return [];
+
+  const verses: ImportedVerse[] = [];
+  for (const bookRaw of payload as RepoBibleBook[]) {
+    if (!bookRaw || !Array.isArray(bookRaw.chapters)) continue;
+    const bookName = normalizeBookNameFromCatalog(String(bookRaw.name || 'Desconhecido'));
+
+    bookRaw.chapters.forEach((chapterRaw, chapterIndex) => {
+      if (!Array.isArray(chapterRaw)) return;
+
+      chapterRaw.forEach((verseRaw, verseIndex) => {
+        if (typeof verseRaw !== 'string') return;
+        const text = verseRaw.trim();
+        if (!text || text === ' ') return;
+
+        verses.push({
+          book: bookName,
+          chapter: chapterIndex + 1,
+          verse: verseIndex + 1,
+          text,
+          version: versionCode,
+        });
+      });
+    });
+  }
+
+  return verses;
+};
+
 // --- Types ---
 type Screen = 'home' | 'bible' | 'study' | 'confessions' | 'library' | 'settings' | 'reading-plans';
 
@@ -387,8 +459,8 @@ const BottomNav = ({ active, onChange }: { active: Screen, onChange: (s: Screen)
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-navy-900/80 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800 pb-safe z-50">
-      <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-navy-900/80 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800 pb-safe z-50 lg:top-0 lg:bottom-0 lg:right-auto lg:w-24 lg:border-t-0 lg:border-r lg:pb-0">
+      <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2 lg:h-full lg:max-w-none lg:flex-col lg:justify-start lg:pt-6 lg:gap-2 lg:px-3">
         {items.map((item) => {
           const isActive = active === item.id;
           return (
@@ -399,14 +471,14 @@ const BottomNav = ({ active, onChange }: { active: Screen, onChange: (s: Screen)
                 onChange(item.id as Screen);
               }}
               className={cn(
-                "flex flex-col items-center justify-center w-full h-full transition-all relative",
+                "flex flex-col items-center justify-center w-full h-full transition-all relative lg:h-auto lg:py-3 lg:rounded-2xl",
                 isActive ? "text-petrol-500 dark:text-petrol-100" : "text-gray-400 dark:text-gray-500"
               )}
             >
               {isActive && (
                 <motion.div
                   layoutId="nav-indicator"
-                  className="absolute top-1 w-8 h-1 bg-petrol-500 dark:bg-petrol-100 rounded-full"
+                  className="absolute top-1 w-8 h-1 bg-petrol-500 dark:bg-petrol-100 rounded-full lg:top-auto lg:left-0 lg:w-1 lg:h-8 lg:rounded-r-full lg:rounded-l-none"
                 />
               )}
               <item.icon className={cn("w-5 h-5 mb-1 transition-transform", isActive && "scale-110")} />
@@ -428,7 +500,7 @@ const Header = ({ title, showBack, onBack, actions }: { title: string, showBack?
             <ArrowLeft className="w-6 h-6" />
           </button>
         )}
-        <h1 className="text-lg font-bold tracking-tight text-petrol-900 dark:text-white truncate max-w-[200px]">{title}</h1>
+        <h1 className="text-lg font-bold tracking-tight text-petrol-900 dark:text-white truncate max-w-[200px] md:max-w-none">{title}</h1>
       </div>
       <div className="flex items-center gap-2">
         {actions}
@@ -442,17 +514,9 @@ const Header = ({ title, showBack, onBack, actions }: { title: string, showBack?
 const HomeScreen = ({
   onNavigate,
   onOpenPlan,
-  colorTheme,
-  onChangeColorTheme,
-  backgroundTheme,
-  onChangeBackgroundTheme,
 }: {
   onNavigate: (s: Screen) => void;
   onOpenPlan: (plan: ReadingPlan) => void;
-  colorTheme: ColorTheme;
-  onChangeColorTheme: (theme: ColorTheme) => void;
-  backgroundTheme: BackgroundTheme;
-  onChangeBackgroundTheme: (theme: BackgroundTheme) => void;
 }) => {
   const [verse, setVerse] = useState({ text: "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito...", ref: "João 3:16" });
   const [lastReadingLocation, setLastReadingLocation] = useState<{ label: string; createdAt: number } | null>(null);
@@ -520,7 +584,7 @@ const HomeScreen = ({
   };
 
   return (
-    <div className="p-4 space-y-6 pb-24 animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 pb-24 lg:pb-10 animate-fade-in">
       {/* Hero Card */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-petrol-500 to-petrol-700 p-8 text-white shadow-2xl shadow-petrol-500/20">
         <div className="absolute top-0 right-0 -mr-12 -mt-12 w-48 h-48 bg-white/10 rounded-full blur-3xl" />
@@ -551,64 +615,6 @@ const HomeScreen = ({
           <p className="text-xs text-gray-500 mt-1">Último acesso em {new Date(lastReadingLocation.createdAt).toLocaleString()}</p>
         </button>
       )}
-
-      <section className="bg-white dark:bg-gray-800 rounded-3xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-gray-900 dark:text-white">Tema Rápido</h2>
-          <button
-            onClick={() => onNavigate('settings')}
-            className="text-[11px] font-bold text-petrol-500 uppercase tracking-wider"
-          >
-            Ajustes
-          </button>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {COLOR_THEME_OPTIONS.slice(0, 6).map((themeOption) => {
-            const isActive = colorTheme === themeOption.id;
-            return (
-              <button
-                key={themeOption.id}
-                type="button"
-                onClick={() => onChangeColorTheme(themeOption.id)}
-                className={cn(
-                  'p-2 rounded-xl border transition-all',
-                  isActive
-                    ? 'border-petrol-500 ring-2 ring-petrol-200 dark:ring-petrol-800'
-                    : 'border-gray-200 dark:border-gray-700'
-                )}
-              >
-                <div className="h-4 rounded-md" style={{ background: themeOption.preview }} />
-                <p className="mt-1 text-[10px] font-semibold text-gray-700 dark:text-gray-200 truncate">{themeOption.name}</p>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="mt-3">
-          <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Fundo</p>
-          <div className="grid grid-cols-3 gap-2">
-            {BACKGROUND_THEME_OPTIONS.map((themeOption) => {
-              const isActive = backgroundTheme === themeOption.id;
-              return (
-                <button
-                  key={themeOption.id}
-                  type="button"
-                  onClick={() => onChangeBackgroundTheme(themeOption.id)}
-                  className={cn(
-                    'p-2 rounded-xl border transition-all',
-                    isActive
-                      ? 'border-petrol-500 ring-2 ring-petrol-200 dark:ring-petrol-800'
-                      : 'border-gray-200 dark:border-gray-700'
-                  )}
-                >
-                  <div className="h-4 rounded-md" style={{ background: themeOption.preview }} />
-                  <p className="mt-1 text-[10px] font-semibold text-gray-700 dark:text-gray-200 truncate">{themeOption.name}</p>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </section>
 
       {/* Reading Plans */}
       <section>
@@ -651,7 +657,7 @@ const HomeScreen = ({
       </section>
 
       {/* Quick Actions Grid */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <button 
           onClick={() => onNavigate('bible')}
           className="flex flex-col items-start p-5 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm active:scale-95 transition-all"
@@ -966,7 +972,7 @@ const ReadingPlansScreen = ({
             className="w-full p-3 rounded-2xl bg-gray-50 dark:bg-navy-900 border-none focus:ring-2 focus:ring-petrol-500 text-sm"
           />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="text-xs text-gray-500">
               Tipo
               <select
@@ -1026,7 +1032,7 @@ const ReadingPlansScreen = ({
               </select>
             </label>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <label className="text-xs text-gray-500 block">
                   Livro inicial
@@ -1131,7 +1137,7 @@ const ReadingPlansScreen = ({
                 </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div className="rounded-xl bg-paper-50 dark:bg-navy-900 p-3 border border-gray-100 dark:border-gray-700">
                   <p className="text-gray-400 uppercase font-bold tracking-wider">Prazo estimado</p>
                   <p className="text-sm font-bold text-petrol-600 mt-1">{plan.estimatedDays} dias</p>
@@ -1866,7 +1872,7 @@ const BibleScreen = ({
 
       {!isFocusMode && (
         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-paper-50/95 dark:bg-navy-900/95 backdrop-blur-sm">
-          <div className="max-w-2xl mx-auto space-y-3">
+          <div className="max-w-4xl mx-auto space-y-3">
             <div className="grid grid-cols-[auto_1fr_auto] gap-2">
               <button
                 onClick={goToPreviousBook}
@@ -1896,7 +1902,7 @@ const BibleScreen = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1">
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Capítulo</label>
               <div className="grid grid-cols-[auto_1fr_auto] gap-2">
@@ -1986,8 +1992,8 @@ const BibleScreen = ({
         </div>
       )}
 
-      <div ref={screenScrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch] p-6 pb-40">
-        <div className={cn("max-w-2xl mx-auto space-y-8", isFocusMode && "pt-12")}>
+      <div ref={screenScrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch] p-4 sm:p-6 lg:p-8 pb-40 lg:pb-16">
+        <div className={cn("max-w-4xl mx-auto space-y-8", isFocusMode && "pt-12")}>
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 space-y-4">
               <div className="w-8 h-8 border-4 border-petrol-500/30 border-t-petrol-500 rounded-full animate-spin" />
@@ -2277,7 +2283,7 @@ const BibleScreen = ({
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-6 grid grid-cols-2 gap-4">
+              <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Livro</label>
                   <div className="space-y-1">
@@ -2323,13 +2329,13 @@ const BibleScreen = ({
 
 const LibraryScreen = ({ notes, activityEvents }: { notes: Note[]; activityEvents: ActivityEvent[] }) => {
   return (
-    <div className="p-4 space-y-6 pb-24 animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 pb-24 lg:pb-10 animate-fade-in">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-petrol-900 dark:text-white">Minha Biblioteca</h2>
         <p className="text-sm text-gray-500">Suas notas, destaques e meditações.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
           <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 flex items-center justify-center mb-4">
             <Bookmark className="w-5 h-5" />
@@ -2568,7 +2574,7 @@ const StudyScreen = ({
   }, [goalTargets.activeDays, goalTargets.bibleViews, goalTargets.sessions]);
 
   return (
-    <div ref={studyScrollRef} className="h-full min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch] p-4 space-y-6 pb-40 animate-fade-in">
+    <div ref={studyScrollRef} className="h-full min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch] p-4 sm:p-6 lg:p-8 space-y-6 pb-40 lg:pb-16 animate-fade-in">
       <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 rounded-lg bg-petrol-500/10 text-petrol-500">
@@ -2582,7 +2588,7 @@ const StudyScreen = ({
 
         <div className="mb-4">
           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Perfil de meta (estudo)</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button
               onClick={() => onApplyGoalProfile('conservador')}
               className={cn(
@@ -2998,6 +3004,7 @@ const SettingsScreen = ({
   onExportData,
   onImportData,
   onImportBibleVersion,
+  onImportMissingGithubVersions,
   onImportStrongDictionary,
   onResetData,
   activityEvents,
@@ -3021,6 +3028,7 @@ const SettingsScreen = ({
   onExportData: () => void;
   onImportData: (file: File) => void;
   onImportBibleVersion: (file: File) => void;
+  onImportMissingGithubVersions: () => void;
   onImportStrongDictionary: (file: File) => void;
   onResetData: () => void;
   activityEvents: ActivityEvent[];
@@ -3202,7 +3210,7 @@ const SettingsScreen = ({
   };
 
   return (
-    <div className="p-4 space-y-6 pb-24 animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 pb-24 lg:pb-10 animate-fade-in">
       <section className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
         <h3 className="font-bold mb-6 flex items-center gap-2">
           <Type className="w-5 h-5 text-petrol-500" />
@@ -3246,10 +3254,10 @@ const SettingsScreen = ({
 
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="font-medium">Paleta de Cores</span>
+              <span className="font-medium">Tema Rápido</span>
               <span className="text-petrol-500 font-bold">{colorThemes.find(item => item.id === colorTheme)?.name || 'Clássico'}</span>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {colorThemes.map((themeOption) => {
                 const isActive = colorTheme === themeOption.id;
                 return (
@@ -3258,17 +3266,14 @@ const SettingsScreen = ({
                     type="button"
                     onClick={() => onChangeColorTheme(themeOption.id)}
                     className={cn(
-                      'p-3 rounded-2xl border text-left transition-all',
+                      'p-2 rounded-xl border transition-all',
                       isActive
                         ? 'border-petrol-500 ring-2 ring-petrol-200 dark:ring-petrol-800'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-petrol-300 dark:hover:border-petrol-700'
+                        : 'border-gray-200 dark:border-gray-700'
                     )}
                   >
-                    <div className="h-6 rounded-lg" style={{ background: themeOption.preview }} />
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{themeOption.name}</span>
-                      {isActive && <CheckCircle2 className="w-4 h-4 text-petrol-500" />}
-                    </div>
+                    <div className="h-4 rounded-md" style={{ background: themeOption.preview }} />
+                    <p className="mt-1 text-[10px] font-semibold text-gray-700 dark:text-gray-200 truncate">{themeOption.name}</p>
                   </button>
                 );
               })}
@@ -3280,7 +3285,7 @@ const SettingsScreen = ({
               <span className="font-medium">Fundo do App</span>
               <span className="text-petrol-500 font-bold">{backgroundThemes.find(item => item.id === backgroundTheme)?.name || 'Papel'}</span>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {backgroundThemes.map((themeOption) => {
                 const isActive = backgroundTheme === themeOption.id;
                 return (
@@ -3289,17 +3294,14 @@ const SettingsScreen = ({
                     type="button"
                     onClick={() => onChangeBackgroundTheme(themeOption.id)}
                     className={cn(
-                      'p-3 rounded-2xl border text-left transition-all',
+                      'p-2 rounded-xl border transition-all',
                       isActive
                         ? 'border-petrol-500 ring-2 ring-petrol-200 dark:ring-petrol-800'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-petrol-300 dark:hover:border-petrol-700'
+                        : 'border-gray-200 dark:border-gray-700'
                     )}
                   >
-                    <div className="h-6 rounded-lg" style={{ background: themeOption.preview }} />
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{themeOption.name}</span>
-                      {isActive && <CheckCircle2 className="w-4 h-4 text-petrol-500" />}
-                    </div>
+                    <div className="h-4 rounded-md" style={{ background: themeOption.preview }} />
+                    <p className="mt-1 text-[10px] font-semibold text-gray-700 dark:text-gray-200 truncate">{themeOption.name}</p>
                   </button>
                 );
               })}
@@ -3346,6 +3348,14 @@ const SettingsScreen = ({
             className="w-full py-3 rounded-2xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-100 font-semibold disabled:opacity-60"
           >
             {isImportingBibleVersion ? 'Importando Bíblia...' : 'Importar Bíblia/Strong'}
+          </button>
+
+          <button
+            onClick={onImportMissingGithubVersions}
+            disabled={isImportingBibleVersion}
+            className="w-full py-3 rounded-2xl bg-petrol-500/10 border border-petrol-300 text-petrol-700 dark:text-petrol-200 font-semibold disabled:opacity-60"
+          >
+            {isImportingBibleVersion ? 'Sincronizando versões...' : 'Importar versões faltantes do GitHub'}
           </button>
 
           <button
@@ -3415,7 +3425,7 @@ const SettingsScreen = ({
 
       <section className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
         <h3 className="font-bold mb-4">Uso do Aplicativo</h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="rounded-2xl bg-paper-50 dark:bg-gray-700 p-4 border border-gray-100 dark:border-gray-600">
             <p className="text-xs uppercase tracking-wider text-gray-500">Eventos totais</p>
             <p className="text-2xl font-bold text-petrol-600 mt-1">{activityEvents.length}</p>
@@ -3454,7 +3464,7 @@ const SettingsScreen = ({
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-2 gap-3">
+        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="rounded-2xl bg-paper-50 dark:bg-gray-700 p-4 border border-gray-100 dark:border-gray-600">
             <p className="text-xs uppercase tracking-wider text-gray-500">Dias ativos (30d)</p>
             <p className="text-2xl font-bold text-petrol-600 mt-1">{activeDaysLast30}</p>
@@ -3501,7 +3511,7 @@ const SettingsScreen = ({
 
           <div className="rounded-xl border border-gray-200 dark:border-gray-600 p-3 bg-white/70 dark:bg-gray-800/60 space-y-3">
             <p className="text-xs uppercase tracking-wider text-gray-500">Personalizar metas</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <button
                 onClick={() => onApplyGoalProfile('conservador')}
                 className={cn(
@@ -3536,7 +3546,7 @@ const SettingsScreen = ({
                 Intensivo
               </button>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <label className="text-[11px] text-gray-600 dark:text-gray-300">
                 Sessões
                 <input
@@ -3858,6 +3868,85 @@ export default function App() {
     }
   };
 
+  const importMissingGithubVersions = async () => {
+    try {
+      setIsImportingBibleVersion(true);
+      setBibleImportStatus('Consultando versões no GitHub...');
+
+      const [stored, listingResponse] = await Promise.all([
+        getStoredVersions(),
+        fetch(GITHUB_BIBLES_API),
+      ]);
+
+      if (!listingResponse.ok) {
+        throw new Error(`Falha ao consultar versões remotas (${listingResponse.status}).`);
+      }
+
+      const listing = await listingResponse.json() as GitHubRepoFile[];
+      const remoteFiles = listing
+        .filter(item => item.type === 'file' && /\.json$/i.test(item.name) && Boolean(item.download_url))
+        .map(item => ({
+          fileName: item.name,
+          code: toVersionCodeFromFileName(item.name),
+          url: String(item.download_url),
+        }));
+
+      const existingCodes = new Set(stored.map(item => String(item.code || '').toUpperCase()));
+      const missing = remoteFiles.filter(item => !existingCodes.has(item.code));
+
+      if (missing.length === 0) {
+        setBibleImportStatus('Nenhuma versão nova encontrada. Seu app já possui todas as versões do repositório remoto.');
+        return;
+      }
+
+      let importedCount = 0;
+      const importedCodes: string[] = [];
+      const failures: string[] = [];
+
+      for (const item of missing) {
+        try {
+          setBibleImportStatus(`Importando ${item.code} (${importedCount + 1}/${missing.length})...`);
+          const response = await fetch(item.url);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+          const payload = await response.json();
+          const verses = parseRepoBibleToVerses(payload, item.code);
+          if (verses.length === 0) throw new Error('formato sem versículos válidos');
+
+          const meta: StoredBibleMeta = {
+            code: item.code,
+            name: item.code,
+            language: 'pt',
+            importedAt: Date.now(),
+          };
+
+          await saveBibleVersion(meta, verses);
+          importedCount += 1;
+          importedCodes.push(item.code);
+          trackActivity('bible_import', `Versão ${item.code} importada do GitHub`);
+        } catch (error: any) {
+          console.error(`Falha ao importar versão ${item.code}:`, error);
+          failures.push(`${item.code}: ${error?.message || 'erro desconhecido'}`);
+        }
+      }
+
+      await refreshBibleVersionCodes();
+
+      if (importedCount === 0) {
+        setBibleImportStatus(`Nenhuma versão foi importada. Falhas: ${failures.join(' | ')}`);
+        return;
+      }
+
+      const baseMessage = `Importação concluída: ${importedCount}/${missing.length} versões novas (${importedCodes.join(', ')}).`;
+      setBibleImportStatus(failures.length > 0 ? `${baseMessage} Falhas: ${failures.join(' | ')}` : baseMessage);
+    } catch (error: any) {
+      console.error('Falha ao sincronizar versões do GitHub:', error);
+      setBibleImportStatus(`Falha na sincronização automática: ${error?.message || 'erro desconhecido'}`);
+    } finally {
+      setIsImportingBibleVersion(false);
+    }
+  };
+
   const importStrongDictionaryData = async (file: File) => {
     try {
       setIsImportingStrongDictionary(true);
@@ -4005,10 +4094,6 @@ export default function App() {
           <HomeScreen
             onNavigate={setScreen}
             onOpenPlan={openPlanInBible}
-            colorTheme={colorTheme}
-            onChangeColorTheme={setColorTheme}
-            backgroundTheme={backgroundTheme}
-            onChangeBackgroundTheme={setBackgroundTheme}
           />
         );
       case 'bible': return <BibleScreen onAddNote={addNote} availableVersions={bibleVersionCodes} />;
@@ -4027,6 +4112,7 @@ export default function App() {
             onExportData={exportAppData}
             onImportData={importAppData}
             onImportBibleVersion={importBibleVersionData}
+            onImportMissingGithubVersions={importMissingGithubVersions}
             onImportStrongDictionary={importStrongDictionaryData}
             onResetData={resetLocalData}
             activityEvents={activityEvents}
@@ -4048,24 +4134,20 @@ export default function App() {
           <HomeScreen
             onNavigate={setScreen}
             onOpenPlan={openPlanInBible}
-            colorTheme={colorTheme}
-            onChangeColorTheme={setColorTheme}
-            backgroundTheme={backgroundTheme}
-            onChangeBackgroundTheme={setBackgroundTheme}
           />
         );
     }
   };
 
   return (
-    <div className="min-h-full flex flex-col bg-paper-50 dark:bg-navy-900 transition-colors duration-500 overflow-hidden">
+    <div className="min-h-full flex flex-col bg-paper-50 dark:bg-navy-900 transition-colors duration-500 overflow-hidden lg:pl-24">
       {!isOnline && (
         <div className="px-4 py-2 text-xs text-center font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 border-b border-amber-200 dark:border-amber-800">
           Você está offline. Alguns recursos podem ficar indisponíveis temporariamente.
         </div>
       )}
 
-      <main className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch] relative">
+      <main className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch] relative lg:w-full lg:max-w-6xl lg:mx-auto">
         <AnimatePresence mode="wait">
           <motion.div
             key={screen}
@@ -4073,7 +4155,7 @@ export default function App() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.2 }}
-            className="h-full min-h-0"
+            className="h-full min-h-0 lg:px-6 xl:px-10"
           >
             {renderScreen()}
           </motion.div>
