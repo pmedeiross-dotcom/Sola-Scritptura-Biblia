@@ -142,15 +142,22 @@ html[data-color-theme='emerald'] {
 
 html, body {
   height: 100%;
+  min-height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   user-select: none;
   font-family: var(--body-font-stack);
   background-color: var(--app-bg-light);
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: auto;
   -webkit-tap-highlight-color: transparent;
   -webkit-overflow-scrolling: touch;
+}
+
+#root {
+  min-height: 100%;
+  height: 100%;
 }
 
 .dark body {
