@@ -2801,7 +2801,7 @@ const StudyScreen = ({
   const [query, setQuery] = useState('');
   const [response, setResponse] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [scope, setScope] = useState<'chapter' | 'book' | 'bible'>('chapter');
+  const [scope, setScope] = useState<'chapter' | 'book' | 'bible'>('bible');
   const [version, setVersion] = useState<string>('ARC');
   const [enableSemanticExpansion, setEnableSemanticExpansion] = useState(true);
   const [enableStemming, setEnableStemming] = useState(true);
@@ -2830,9 +2830,8 @@ const StudyScreen = ({
         referenceInput?: string;
       };
 
-      if (parsed.scope && ['chapter', 'book', 'bible'].includes(parsed.scope)) {
-        setScope(parsed.scope);
-      }
+      // Mantem o comportamento padrao solicitado: iniciar sempre com busca na Biblia inteira.
+      setScope('bible');
       if (typeof parsed.version === 'string' && parsed.version.trim().length > 0) {
         setVersion(parsed.version);
       }
@@ -2877,7 +2876,7 @@ const StudyScreen = ({
   }, [availableVersions, version]);
 
   const resetAnalysisPreferences = () => {
-    setScope('chapter');
+    setScope('bible');
     setVersion('ARC');
     setEnableSemanticExpansion(true);
     setEnableStemming(true);
