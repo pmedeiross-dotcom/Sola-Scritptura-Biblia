@@ -1888,7 +1888,7 @@ const BibleScreen = ({
 
       {!isFocusMode && (
         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-paper-50/95 dark:bg-navy-900/95 backdrop-blur-sm">
-          <div className="max-w-4xl mx-auto space-y-3">
+          <div className="max-w-6xl xl:max-w-[1280px] mx-auto space-y-2.5">
             <div className="grid grid-cols-[auto_1fr_auto] gap-2">
               <button
                 onClick={goToPreviousBook}
@@ -1918,8 +1918,8 @@ const BibleScreen = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="space-y-1">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
+            <div className="space-y-1 lg:col-span-4">
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Capítulo</label>
               <div className="grid grid-cols-[auto_1fr_auto] gap-2">
                 <button
@@ -1948,7 +1948,7 @@ const BibleScreen = ({
               </div>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 lg:col-span-3">
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Versão</label>
               <select
                 value={version}
@@ -1961,7 +1961,7 @@ const BibleScreen = ({
               </select>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 lg:col-span-5">
               <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Ir para versículo</label>
               <div className="grid grid-cols-[1fr_auto_auto] gap-2">
                 <input
@@ -2008,24 +2008,24 @@ const BibleScreen = ({
         </div>
       )}
 
-      <div ref={screenScrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch] p-4 sm:p-6 lg:p-8 pb-40 lg:pb-16">
-        <div className={cn("max-w-4xl mx-auto space-y-8", isFocusMode && "pt-12")}>
+      <div ref={screenScrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch] p-3 sm:p-4 lg:p-5 pb-28 lg:pb-10">
+        <div className={cn("max-w-6xl xl:max-w-[1280px] mx-auto space-y-5", isFocusMode && "pt-8") }>
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 space-y-4">
               <div className="w-8 h-8 border-4 border-petrol-500/30 border-t-petrol-500 rounded-full animate-spin" />
               <p className="text-sm text-gray-400 font-medium">Abrindo as Escrituras...</p>
             </div>
           ) : content ? (
-            <div className="space-y-8">
-              <div className="rounded-[2rem] bg-[#efe4c8] dark:bg-[#2a241d] border border-[#d7c7a2] dark:border-[#3a3228] shadow-inner px-5 py-6">
+            <div className="space-y-5">
+              <div className="rounded-[1.75rem] bg-[#efe4c8] dark:bg-[#2a241d] border border-[#d7c7a2] dark:border-[#3a3228] shadow-inner px-4 sm:px-5 py-4 sm:py-5">
                 {verses.length > 0 ? (
-                  <div ref={verseContainerRef} className={cn("space-y-3 overflow-y-auto pr-2", isFocusMode ? "max-h-[74vh]" : "max-h-[56vh]")}>
+                  <div ref={verseContainerRef} className={cn("space-y-2.5 overflow-y-auto pr-1.5", isFocusMode ? "max-h-[78vh]" : "max-h-[64vh]")}>
                     {verses.map(v => (
                       <p
                         key={`${v.number}-${v.text.slice(0, 24)}`}
                         data-verse-number={v.number}
                         className={cn(
-                          "text-[2rem] leading-[1.55] tracking-tight text-[#131313] dark:text-[#f1ece2] rounded-xl px-1 transition-colors",
+                          "text-[1.7rem] lg:text-[1.85rem] leading-[1.5] tracking-tight text-[#131313] dark:text-[#f1ece2] rounded-xl px-1 transition-colors",
                           highlightedVerse === v.number && "bg-amber-100/70 dark:bg-petrol-900/40"
                         )}
                       >
@@ -2035,14 +2035,14 @@ const BibleScreen = ({
                     ))}
                   </div>
                 ) : (
-                  <div className={cn("prose prose-slate dark:prose-invert max-w-none reading-text leading-loose text-lg overflow-y-auto pr-2", isFocusMode ? "max-h-[74vh]" : "max-h-[56vh]")}>
+                  <div className={cn("prose prose-slate dark:prose-invert max-w-none reading-text leading-loose text-lg overflow-y-auto pr-1.5", isFocusMode ? "max-h-[78vh]" : "max-h-[64vh]")}>
                     <LazyMarkdown>{content.text}</LazyMarkdown>
                   </div>
                 )}
               </div>
 
               {!isFocusMode && (
-                <div className="space-y-6 pt-8 border-t border-gray-200 dark:border-gray-800">
+                <div className="space-y-4 pt-5 border-t border-gray-200 dark:border-gray-800">
                   {content.summary && (
                     <div className="p-6 rounded-3xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm">
                       <h4 className="text-xs font-bold uppercase tracking-wider text-petrol-500 mb-3 flex items-center gap-2">
