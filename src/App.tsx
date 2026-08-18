@@ -4395,8 +4395,13 @@ export default function App() {
     const date = typeof raw.date === 'string' && raw.date ? raw.date : new Date().toISOString();
     const updatedAt = typeof raw.updatedAt === 'string' && raw.updatedAt ? raw.updatedAt : undefined;
     const tags = Array.isArray(raw.tags)
-      ? raw.tags.filter((tag: unknown): tag is string => typeof tag === 'string' && tag.trim().length > 0).map((tag: string) => tag.trim())
-      : [];
+  ? raw.tags
+      .filter(
+        (tag: unknown): tag is string =>
+          typeof tag === 'string' && tag.trim().length > 0
+      )
+      .map((tag: string) => tag.trim())
+  : [];
     const notebook = typeof raw.notebook === 'string' && raw.notebook.trim().length > 0 ? raw.notebook.trim() : 'Geral';
     const pinned = typeof raw.pinned === 'boolean' ? raw.pinned : false;
 
