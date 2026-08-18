@@ -1305,6 +1305,7 @@ const BibleScreen = ({
   const [pendingVerseJump, setPendingVerseJump] = useState<number | null>(null);
   const [targetVerse, setTargetVerse] = useState('');
   const [highlightedVerse, setHighlightedVerse] = useState<number | null>(null);
+  const [currentVisibleVerse, setCurrentVisibleVerse] = useState<number | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [scrollButtonsActive, setScrollButtonsActive] = useState(true);
@@ -1396,10 +1397,14 @@ const BibleScreen = ({
   };
 
   const activeCommentaryKey = useMemo(() => {
-    const verse = parseInt(targetVerse, 10);
-    const safeVerse = Number.isNaN(verse) || verse < 1 ? 1 : verse;
-    return `${book.name}|${chapter}|${safeVerse}`;
-  }, [book.name, chapter, targetVerse]);
+  const typedVerse = parseInt(targetVerse, 10);
+
+  const safeVerse =
+    currentVisibleVerse ??
+    (!Number.isNaN(typedVerse) && typedVerse > 0 ? typedVerse : 1);
+
+  return `${book.name}|${chapter}|${safeVerse}`;
+}, [book.name, chapter, currentVisibleVerse, targetVerse]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -1544,25 +1549,41 @@ const BibleScreen = ({
   };
 
   const saveCurrentLocation = () => {
-    const verse = parseInt(targetVerse, 10);
-    const safeVerse = Number.isNaN(verse) || verse < 1 ? 1 : verse;
+  const typedVerse = parseInt(targetVerse, 10);
 
-    setReadingLocations(prev => {
-      const entry = {
-        id: `${Date.now()}`,
-        label: `${book.name} ${chapter}:${safeVerse}`,
-        bookName: book.name,
-        chapter,
-        verse: safeVerse,
-        createdAt: Date.now()
-      };
+  const safeVerse =
+    currentVisibleVerse ??
+    (!Number.isNaN(typedVerse) && typedVerse > 0 ? typedVerse : 1);
 
-      const filtered = prev.filter(loc => !(loc.bookName === entry.bookName && loc.chapter === entry.chapter && loc.verse === entry.verse));
-      const next = [entry, ...filtered].slice(0, 30);
-      localStorage.setItem('reading-locations', JSON.stringify(next));
-      return next;
-    });
-  };
+  setReadingLocations(prev => {
+    const entry = {
+      id: `${Date.now()}`,
+      label: `${book.name} ${chapter}:${safeVerse}`,
+      bookName: book.name,
+      chapter,
+      verse: safeVerse,
+      createdAt: Date.now()
+    };
+
+    const filtered = prev.filter(
+      loc =>
+        !(
+          loc.bookName === entry.bookName &&
+          loc.chapter === entry.chapter &&
+          loc.verse === entry.verse
+        )
+    );
+
+    const next = [entry, ...filtered].slice(0, 30);
+
+    localStorage.setItem(
+      'reading-locations',
+      JSON.stringify(next)
+    );
+
+    return next;
+  });
+};
 
   const restoreLocation = (location: { bookName: string; chapter: number; verse: number }) => {
     const foundBook = BOOKS.find(b => b.name === location.bookName);
@@ -1760,13 +1781,59 @@ const BibleScreen = ({
     if (!container) return;
 
     const handleScroll = () => {
-      const maxScrollTop = container.scrollHeight - container.clientHeight;
-      setShowScrollTop(container.scrollTop > 220);
-      setShowScrollBottom(container.scrollTop < maxScrollTop - 120);
-      setScrollButtonsActive(true);
-      if (scrollButtonsTimerRef.current) clearTimeout(scrollButtonsTimerRef.current);
-      scrollButtonsTimerRef.current = setTimeout(() => setScrollButtonsActive(false), 1200);
-    };
+  const maxScrollTop = container.scrollHeight - container.clientHeight;
+
+  setShowScrollTop(container.scrollTop > 220);
+  setShowScrollBottom(container.scrollTop < maxScrollTop - 120);
+  setScrollButtonsActive(true);
+
+  // Detecta o versículo atualmente mais próximo do centro da área de leitura.
+  const verseElements = Array.from(
+    verseContainerRef.current?.querySelectorAll<HTMLElement>('[data-verse-number]') || []
+  );
+
+  if (verseElements.length > 0) {
+    const containerRect = container.getBoundingClientRect();
+    const containerCenter = containerRect.top + containerRect.height / 2;
+
+    let closestVerse: number | null = null;
+    let closestDistance = Infinity;
+
+    verseElements.forEach(element => {
+      const rect = element.getBoundingClientRect();
+
+      // Ignora versículos que estão completamente fora da área visível.
+      if (rect.bottom < containerRect.top || rect.top > containerRect.bottom) {
+        return;
+      }
+
+      const elementCenter = rect.top + rect.height / 2;
+      const distance = Math.abs(elementCenter - containerCenter);
+
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        const verseNumber = Number(element.dataset.verseNumber);
+
+        if (Number.isFinite(verseNumber) && verseNumber > 0) {
+          closestVerse = verseNumber;
+        }
+      }
+    });
+
+    if (closestVerse !== null) {
+      setCurrentVisibleVerse(closestVerse);
+    }
+  }
+
+  if (scrollButtonsTimerRef.current) {
+    clearTimeout(scrollButtonsTimerRef.current);
+  }
+
+  scrollButtonsTimerRef.current = setTimeout(
+    () => setScrollButtonsActive(false),
+    1200
+  );
+};
 
     handleScroll();
     container.addEventListener('scroll', handleScroll);
