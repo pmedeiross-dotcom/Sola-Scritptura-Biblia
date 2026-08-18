@@ -1602,7 +1602,9 @@ const BibleScreen = ({
   const chapterPart = parts.pop();
   const bookName = parts.join(' ');
 
-  const foundBook = BOOKS.find(b => b.name.toLowerCase() === bookName.toLowerCase());
+  const foundBook = BOOKS.find(
+    b => b.name.toLowerCase() === bookName.toLowerCase()
+  );
 
   if (foundBook) {
     setBook(foundBook);
@@ -1613,20 +1615,18 @@ const BibleScreen = ({
 
     setChapter(c);
 
+    if (v !== null && !Number.isNaN(v)) {
+      setTargetVerse(String(v));
+      setPendingVerseJump(v);
+    }
+
     setShowSearch(false);
     setSearchQuery('');
     setSearchResults([]);
     setSearchError(null);
     setHasSearched(false);
-
-    if (v !== null && !Number.isNaN(v)) {
-      setTimeout(() => {
-        goToVerse(v);
-      }, 100);
-    }
   }
 };
-
   const handleShare = async () => {
     if (navigator.share && content) {
       try {
