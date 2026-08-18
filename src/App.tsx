@@ -1817,52 +1817,38 @@ const BibleScreen = ({
     setNavHistoryIndex(prev => prev + 1);
   }, [book, chapter]);
 
-  useEffect(() => {
-    const container = screenScrollRef.current;
-    if (!container) return;
+useEffect(() => {
+  const container = screenScrollRef.current;
+  if (!container) return;
 
-    const handleScroll = () => {
-  const maxScrollTop = container.scrollHeight - container.clientHeight;
+  const handleScroll = () => {
+    const maxScrollTop = container.scrollHeight - container.clientHeight;
 
-  setShowScrollTop(container.scrollTop > 220);
-  setShowScrollBottom(container.scrollTop < maxScrollTop - 120);
-  setScrollButtonsActive(true);
+    setShowScrollTop(container.scrollTop > 220);
+    setShowScrollBottom(container.scrollTop < maxScrollTop - 120);
+    setScrollButtonsActive(true);
 
-const handleScroll = () => {
-  const maxScrollTop = container.scrollHeight - container.clientHeight;
+    if (scrollButtonsTimerRef.current) {
+      clearTimeout(scrollButtonsTimerRef.current);
+    }
 
-  setShowScrollTop(container.scrollTop > 220);
-  setShowScrollBottom(container.scrollTop < maxScrollTop - 120);
-  setScrollButtonsActive(true);
+    scrollButtonsTimerRef.current = setTimeout(
+      () => setScrollButtonsActive(false),
+      1200
+    );
+  };
 
-  if (scrollButtonsTimerRef.current) {
-    clearTimeout(scrollButtonsTimerRef.current);
-  }
+  handleScroll();
+  container.addEventListener('scroll', handleScroll);
 
-  scrollButtonsTimerRef.current = setTimeout(
-    () => setScrollButtonsActive(false),
-    1200
-  );
-};
-  }
+  return () => {
+    container.removeEventListener('scroll', handleScroll);
 
-  if (scrollButtonsTimerRef.current) {
-    clearTimeout(scrollButtonsTimerRef.current);
-  }
-
-  scrollButtonsTimerRef.current = setTimeout(
-    () => setScrollButtonsActive(false),
-    1200
-  );
-};
-
-    handleScroll();
-    container.addEventListener('scroll', handleScroll);
-    return () => {
-      container.removeEventListener('scroll', handleScroll);
-      if (scrollButtonsTimerRef.current) clearTimeout(scrollButtonsTimerRef.current);
-    };
-  }, [content, analysis, isFocusMode, showSearch]);
+    if (scrollButtonsTimerRef.current) {
+      clearTimeout(scrollButtonsTimerRef.current);
+    }
+  };
+}, [content, analysis, isFocusMode, showSearch]);
 
 useEffect(() => {
   const container = verseContainerRef.current;
