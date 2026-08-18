@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --sat: env(safe-area-inset-top);
   --sar: env(safe-area-inset-right);
@@ -169,7 +173,7 @@ html, body {
 .dark .bg-navy-900\/80 { background-color: color-mix(in srgb, var(--app-bg-dark) 80%, transparent) !important; }
 
 .reading-text {
-  font-family: "Merriweather", "Georgia", "serif";
+  font-family: "Merriweather", "Georgia", serif;
   font-size: var(--reading-font-size);
   line-height: 1.85;
   user-select: text;
@@ -181,20 +185,10 @@ html, body {
 .mt-safe { margin-top: var(--sat); }
 .mb-safe { margin-bottom: var(--sab); }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { 
-  background: #cbd5e1; 
-  border-radius: 10px;
-}
-.dark ::-webkit-scrollbar-thumb { background: #334155; }
-
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { 
-  background: #cbd5e1; 
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
   border-radius: 10px;
 }
 .dark ::-webkit-scrollbar-thumb { background: #334155; }
