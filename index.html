@@ -1,69 +1,22 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR" class="h-full">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <title>Sola Scriptura & Confessio</title>
-    
+
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#006D77" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#2c7a7b" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Sola Scriptura" />
-    
-    <link rel="icon" type="image/png" href="logo.png" />
-    <link rel="apple-touch-icon" href="logo.png" />
 
-    <script>
-      window.process = { env: { NODE_ENV: 'development' } };
-    </script>
-    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            colors: {
-              petrol: {
-                50: '#E6F6F9',
-                100: '#CBEBEF',
-                500: '#006D77',
-                700: '#004E64',
-                900: '#003544',
-              },
-              paper: {
-                50: '#FAF9F6',
-                100: '#F5F2EA',
-                200: '#EBE5D5',
-              },
-              gold: {
-                500: '#C5A059',
-                600: '#B08D46',
-              },
-              crimson: {
-                600: '#A51C30',
-                700: '#821426',
-              },
-              navy: {
-                800: '#1A202C',
-                900: '#111827',
-              }
-            },
-            fontFamily: {
-              serif: ['Merriweather', 'Georgia', 'serif'],
-              sans: ['Inter', 'system-ui', 'sans-serif'],
-            },
-            borderRadius: {
-              '3xl': '24px',
-              '4xl': '32px',
-            }
-          },
-        },
-      }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet" />
   </head>
   <body class="bg-paper-50 text-petrol-900 dark:bg-navy-900 dark:text-gray-100 transition-colors duration-500">
     <div id="root"></div>
