@@ -1597,23 +1597,35 @@ const BibleScreen = ({
   };
 
   const selectReference = (ref: string) => {
-    // Basic parser for "Book Chapter:Verse" or "Book Chapter"
-    const parts = ref.split(' ');
-    const chapterPart = parts.pop();
-    const bookName = parts.join(' ');
-    
-    const foundBook = BOOKS.find(b => b.name.toLowerCase() === bookName.toLowerCase());
-    if (foundBook) {
-      setBook(foundBook);
-      const c = parseInt(chapterPart?.split(':')[0] || '1');
-      setChapter(c);
-      setShowSearch(false);
-      setSearchQuery('');
-      setSearchResults([]);
-      setSearchError(null);
-      setHasSearched(false);
+  // Basic parser for "Book Chapter:Verse" or "Book Chapter"
+  const parts = ref.trim().split(' ');
+  const chapterPart = parts.pop();
+  const bookName = parts.join(' ');
+
+  const foundBook = BOOKS.find(b => b.name.toLowerCase() === bookName.toLowerCase());
+
+  if (foundBook) {
+    setBook(foundBook);
+
+    const [chapterText, verseText] = (chapterPart || '1').split(':');
+    const c = parseInt(chapterText || '1', 10);
+    const v = verseText ? parseInt(verseText, 10) : null;
+
+    setChapter(c);
+
+    setShowSearch(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    setSearchError(null);
+    setHasSearched(false);
+
+    if (v !== null && !Number.isNaN(v)) {
+      setTimeout(() => {
+        goToVerse(v);
+      }, 100);
     }
-  };
+  }
+};
 
   const handleShare = async () => {
     if (navigator.share && content) {
