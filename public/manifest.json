@@ -1,0 +1,86 @@
+{
+  "name": "Sola Scriptura - Leitura Bíblica Offline",
+  "short_name": "Scriptura",
+  "description": "Aplicativo de leitura bíblica, estudo teológico e símbolos de fé reformados com IA local.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#2c7a7b",
+  "background_color": "#faf9f6",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-1.png",
+      "sizes": "540x720",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshot-2.png",
+      "sizes": "540x720",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["productivity", "lifestyle"],
+  "shortcuts": [
+    {
+      "name": "Ler Bíblia",
+      "short_name": "Leitura",
+      "description": "Abrir leitor de Bíblia",
+      "url": "/?screen=reader",
+      "icons": [{
+        "src": "/logo.png",
+        "sizes": "192x192"
+      }]
+    },
+    {
+      "name": "Minhas Notas",
+      "short_name": "Notas",
+      "description": "Acessar biblioteca de notas",
+      "url": "/?screen=notes",
+      "icons": [{
+        "src": "/logo.png",
+        "sizes": "192x192"
+      }]
+    },
+    {
+      "name": "Planos de Leitura",
+      "short_name": "Planos",
+      "description": "Ver planos de leitura",
+      "url": "/?screen=plans",
+      "icons": [{
+        "src": "/logo.png",
+        "sizes": "192x192"
+      }]
+    }
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
