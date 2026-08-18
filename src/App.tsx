@@ -1317,6 +1317,47 @@ const BibleScreen = ({
   const verseContainerRef = useRef<HTMLDivElement | null>(null);
   const screenScrollRef = useRef<HTMLDivElement | null>(null);
   const scrollButtonsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const updateCurrentVisibleVerse = () => {
+  const container = verseContainerRef.current;
+  if (!container) return;
+
+  const verseElements = Array.from(
+    container.querySelectorAll<HTMLElement>('[data-verse-number]')
+  );
+
+  if (verseElements.length === 0) return;
+
+  const containerRect = container.getBoundingClientRect();
+  const containerCenter = containerRect.top + containerRect.height / 2;
+
+  let closestVerse: number | null = null;
+  let closestDistance = Infinity;
+
+  verseElements.forEach(element => {
+    const rect = element.getBoundingClientRect();
+
+    if (rect.bottom < containerRect.top || rect.top > containerRect.bottom) {
+      return;
+    }
+
+    const elementCenter = rect.top + rect.height / 2;
+    const distance = Math.abs(elementCenter - containerCenter);
+    const verseNumber = Number(element.dataset.verseNumber);
+
+    if (
+      distance < closestDistance &&
+      Number.isFinite(verseNumber) &&
+      verseNumber > 0
+    ) {
+      closestDistance = distance;
+      closestVerse = verseNumber;
+    }
+  });
+
+  if (closestVerse !== null) {
+    setCurrentVisibleVerse(closestVerse);
+  }
+};
 
   const verses = useMemo(() => {
     if (!content?.text) return [] as Array<{ number: number; text: string }>;
@@ -1787,42 +1828,22 @@ const BibleScreen = ({
   setShowScrollBottom(container.scrollTop < maxScrollTop - 120);
   setScrollButtonsActive(true);
 
-  // Detecta o versículo atualmente mais próximo do centro da área de leitura.
-  const verseElements = Array.from(
-    verseContainerRef.current?.querySelectorAll<HTMLElement>('[data-verse-number]') || []
+const handleScroll = () => {
+  const maxScrollTop = container.scrollHeight - container.clientHeight;
+
+  setShowScrollTop(container.scrollTop > 220);
+  setShowScrollBottom(container.scrollTop < maxScrollTop - 120);
+  setScrollButtonsActive(true);
+
+  if (scrollButtonsTimerRef.current) {
+    clearTimeout(scrollButtonsTimerRef.current);
+  }
+
+  scrollButtonsTimerRef.current = setTimeout(
+    () => setScrollButtonsActive(false),
+    1200
   );
-
-  if (verseElements.length > 0) {
-    const containerRect = container.getBoundingClientRect();
-    const containerCenter = containerRect.top + containerRect.height / 2;
-
-    let closestVerse: number | null = null;
-    let closestDistance = Infinity;
-
-    verseElements.forEach(element => {
-      const rect = element.getBoundingClientRect();
-
-      // Ignora versículos que estão completamente fora da área visível.
-      if (rect.bottom < containerRect.top || rect.top > containerRect.bottom) {
-        return;
-      }
-
-      const elementCenter = rect.top + rect.height / 2;
-      const distance = Math.abs(elementCenter - containerCenter);
-
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        const verseNumber = Number(element.dataset.verseNumber);
-
-        if (Number.isFinite(verseNumber) && verseNumber > 0) {
-          closestVerse = verseNumber;
-        }
-      }
-    });
-
-    if (closestVerse !== null) {
-      setCurrentVisibleVerse(closestVerse);
-    }
+};
   }
 
   if (scrollButtonsTimerRef.current) {
@@ -1842,6 +1863,23 @@ const BibleScreen = ({
       if (scrollButtonsTimerRef.current) clearTimeout(scrollButtonsTimerRef.current);
     };
   }, [content, analysis, isFocusMode, showSearch]);
+
+useEffect(() => {
+  const container = verseContainerRef.current;
+  if (!container) return;
+
+  const handleVerseScroll = () => {
+    updateCurrentVisibleVerse();
+  };
+
+  handleVerseScroll();
+
+  container.addEventListener('scroll', handleVerseScroll);
+
+  return () => {
+    container.removeEventListener('scroll', handleVerseScroll);
+  };
+}, [verses, content, isFocusMode]);
 
   const scrollToTop = () => {
     screenScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
