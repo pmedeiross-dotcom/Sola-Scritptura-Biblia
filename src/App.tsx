@@ -1317,7 +1317,7 @@ const BibleScreen = ({
   const verseContainerRef = useRef<HTMLDivElement | null>(null);
   const screenScrollRef = useRef<HTMLDivElement | null>(null);
   const scrollButtonsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const updateCurrentVisibleVerse = () => {
+ const updateCurrentVisibleVerse = () => {
   const container = verseContainerRef.current;
   if (!container) return;
 
@@ -1358,7 +1358,6 @@ const BibleScreen = ({
     setCurrentVisibleVerse(closestVerse);
   }
 };
-
   const verses = useMemo(() => {
     if (!content?.text) return [] as Array<{ number: number; text: string }>;
 
