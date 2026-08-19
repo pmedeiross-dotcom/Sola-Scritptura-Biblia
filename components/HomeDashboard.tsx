@@ -20,6 +20,7 @@ import {
 import { Tab } from '../types';
 import { LOGO_SVG, MOCK_VERSES } from '../constants';
 import '../src/modern.css';
+import '../src/home-launcher.css';
 
 interface HomeDashboardProps {
   onChangeTab: (tab: Tab) => void;
