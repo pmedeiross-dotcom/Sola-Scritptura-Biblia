@@ -1,0 +1,159 @@
+name: Apply Active Home
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.head_commit.message != 'Apply active HomeScreen redesign'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Replace the HomeScreen actually rendered by App.tsx
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('src/App.tsx')
+          text = path.read_text(encoding='utf-8')
+          start = text.find('const HomeScreen = (')
+          end = text.find('const BibleScreen = (', start)
+          if start < 0 or end < 0:
+              raise SystemExit('Active HomeScreen not found')
+
+          new_home = '''const HomeScreen = ({
+            onNavigate,
+            onOpenPlan,
+          }: {
+            onNavigate: (s: Screen) => void;
+            onOpenPlan: (plan: ReadingPlan) => void;
+          }) => {
+            const [verse, setVerse] = useState({ text: 'Lâmpada para os meus pés é tua palavra, e luz para o meu caminho.', ref: 'Salmos 119:105' });
+
+            useEffect(() => {
+              let active = true;
+              const load = async () => {
+                try {
+                  const dailyRef = DAILY_VERSE_REFERENCES[getDailyReferenceIndex(new Date())];
+                  const version = localStorage.getItem('preferred-bible-version') || 'ARC';
+                  const verses = await getLocalBibleChapterLazy(dailyRef.book, dailyRef.chapter, version);
+                  const item = verses.find(v => v.verse === dailyRef.verse);
+                  if (active && item?.text) setVerse({ text: item.text.trim(), ref: `${dailyRef.book} ${dailyRef.chapter}:${dailyRef.verse}` });
+                } catch {}
+              };
+              void load();
+              return () => { active = false; };
+            }, []);
+
+            const quickActions = [
+              { label: 'Ler Bíblia', desc: 'Abra as Escrituras', icon: Book, action: () => onNavigate('bible') },
+              { label: 'Pesquisar', desc: 'Encontre uma passagem', icon: Search, action: () => onNavigate('bible') },
+              { label: 'Favoritos', desc: 'Versículos guardados', icon: Bookmark, action: () => onNavigate('library') },
+              { label: 'Marcações', desc: 'Destaques da leitura', icon: Highlighter, action: () => onNavigate('library') },
+              { label: 'Anotações', desc: 'Suas notas de estudo', icon: MessageSquare, action: () => onNavigate('library') },
+              { label: 'Histórico', desc: 'Continue de onde parou', icon: History, action: () => onNavigate('library') },
+              { label: 'Traduções', desc: 'Compare versões', icon: Layers, action: () => onNavigate('bible') },
+              { label: 'Plano de leitura', desc: 'Mantenha seu ritmo', icon: Calendar, action: () => onNavigate('reading-plans') },
+              { label: 'Estudo com IA', desc: 'Explore o texto', icon: Sparkles, action: () => onNavigate('study') },
+              { label: 'Confissões', desc: 'Doutrina reformada', icon: Library, action: () => onNavigate('confessions') },
+              { label: 'Biblioteca', desc: 'Recursos de estudo', icon: Book, action: () => onNavigate('library') },
+              { label: 'Configurações', desc: 'Personalize o app', icon: SettingsIcon, action: () => onNavigate('settings') },
+            ];
+
+            return (
+              <div className="home-launcher animate-fade-in h-full min-h-0 overflow-y-auto bg-[#f4f6fb] dark:bg-[#0b1115]">
+                <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8 py-6 pb-28">
+                  <header className="home-launcher-header">
+                    <div>
+                      <p className="home-kicker">SOLA SCRIPTURA</p>
+                      <h1 className="home-title">Seu espaço de leitura e estudo</h1>
+                      <p className="home-subtitle">Tudo o que você precisa para ler, pesquisar e estudar as Escrituras.</p>
+                    </div>
+                    <button onClick={() => onNavigate('settings')} className="home-settings-button" aria-label="Configurações"><SettingsIcon className="w-5 h-5" /></button>
+                  </header>
+
+                  <section className="home-verse-hero">
+                    <div>
+                      <span className="home-verse-label">Versículo do dia</span>
+                      <p className="home-verse-text">&quot;{verse.text}&quot;</p>
+                      <div className="home-verse-ref">{verse.ref}</div>
+                    </div>
+                    <button onClick={() => onNavigate('bible')} className="home-verse-button">Ler agora <ChevronRight className="w-5 h-5" /></button>
+                  </section>
+
+                  <section className="home-featured-grid">
+                    <button onClick={() => onNavigate('bible')} className="home-featured-card home-featured-bible"><span className="home-featured-icon"><Book className="w-6 h-6" /></span><span><strong>Ler a Bíblia</strong><small>Continue sua leitura</small></span><ChevronRight className="w-5 h-5 ml-auto" /></button>
+                    <button onClick={() => onNavigate('study')} className="home-featured-card home-featured-study"><span className="home-featured-icon"><Sparkles className="w-6 h-6" /></span><span><strong>Estudar</strong><small>Contexto, doutrina e IA</small></span><ChevronRight className="w-5 h-5 ml-auto" /></button>
+                  </section>
+
+                  <section className="home-access-section">
+                    <div className="home-section-heading"><div><p className="home-kicker">Acesso rápido</p><h2>Ferramentas</h2></div><span>12 atalhos</span></div>
+                    <div className="home-access-grid">
+                      {quickActions.map(({ label, desc, icon: Icon, action }) => (
+                        <button key={label} onClick={action} className="home-access-tile">
+                          <span className="home-access-icon"><Icon className="w-6 h-6" strokeWidth={1.8} /></span>
+                          <strong>{label}</strong><small>{desc}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+
+                  <section className="home-section">
+                    <div className="home-section-heading"><div><p className="home-kicker">Continue</p><h2>Planos de leitura</h2></div><button onClick={() => onNavigate('reading-plans')}>Ver todos</button></div>
+                    <div className="home-plans-row">
+                      {READING_PLANS.map(plan => (
+                        <button key={plan.id} onClick={() => onOpenPlan(plan)} className="home-plan-card">
+                          <div className="home-plan-top"><span><Calendar className="w-4 h-4" /></span><small>Dia {plan.currentDay}/{plan.days}</small></div>
+                          <strong>{plan.title}</strong>
+                          <div className="home-progress"><i style={{ width: `${plan.progress}%` }} /></div>
+                          <div className="home-plan-bottom"><small>{plan.progress}% concluído</small><b>Continuar</b></div>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+              </div>
+            );
+          };
+
+          '''
+          path.write_text(text[:start] + new_home + text[end:], encoding='utf-8')
+
+      - name: Add home CSS
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('src/index.css')
+          text = path.read_text(encoding='utf-8')
+          marker = '/* ACTIVE HOME REDESIGN */'
+          if marker not in text:
+              text += '''
+
+/* ACTIVE HOME REDESIGN */
+.home-launcher{color:#14202a}.home-launcher-header{display:flex;justify-content:space-between;gap:16px;margin-bottom:24px}.home-kicker{margin:0;font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:#5b5ce2}.home-title{margin:6px 0 0;font:800 clamp(25px,3.5vw,36px)/1.05 Georgia,serif;letter-spacing:-.035em}.home-subtitle{margin-top:7px;color:#7b8794;font-size:13px}.home-settings-button{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:#fff;color:#667085;border:1px solid #e6e9ef;box-shadow:0 8px 25px rgba(15,23,42,.06)}.home-verse-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:22px;min-height:235px;padding:30px;border-radius:30px;color:#fff;background:linear-gradient(135deg,#5a5be3,#4444b5);box-shadow:0 24px 55px rgba(72,72,185,.22)}.home-verse-label{font-size:10px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;opacity:.72}.home-verse-text{margin-top:24px;max-width:850px;font:italic 500 clamp(25px,3.6vw,39px)/1.2 Georgia,serif}.home-verse-ref{margin-top:20px;font-size:16px;font-weight:800}.home-verse-button{display:flex;align-items:center;gap:5px;padding:11px 15px;border-radius:14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);font-size:12px;font-weight:900;white-space:nowrap}.home-featured-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}.home-featured-card{min-height:104px;padding:18px;display:flex;align-items:center;gap:13px;border-radius:22px;border:1px solid #e7eaf0;box-shadow:0 10px 30px rgba(15,23,42,.06);text-align:left}.home-featured-bible{background:#fff7df}.home-featured-study{background:#eafff5}.home-featured-icon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:#fff0b9;color:#c77b00;flex:none}.home-featured-study .home-featured-icon{background:#c9f7df;color:#008f68}.home-featured-card strong,.home-featured-card small{display:block}.home-featured-card small{margin-top:4px;color:#7d8792;font-size:11px}.home-access-section,.home-section{margin-top:30px}.home-section-heading{display:flex;align-items:end;justify-content:space-between;margin-bottom:13px}.home-section-heading h2{margin-top:5px;font:800 23px/1.1 Georgia,serif}.home-section-heading>span,.home-section-heading button{font-size:11px;font-weight:900;color:#5b5ce2;text-transform:uppercase}.home-access-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.home-access-tile{min-height:132px;padding:16px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-radius:21px;background:#fff;border:1px solid #e7eaf0;box-shadow:0 8px 25px rgba(15,23,42,.045)}.home-access-icon{width:45px;height:45px;border-radius:14px;display:grid;place-items:center;margin-bottom:9px;background:#eef0ff;color:#5b5ce2}.home-access-tile strong{font-size:13px}.home-access-tile small{margin-top:4px;color:#89939d;font-size:10px}.home-plans-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.home-plan-card{padding:18px;text-align:left;border-radius:21px;background:#fff;border:1px solid #e7eaf0;box-shadow:0 8px 25px rgba(15,23,42,.045)}.home-plan-top{display:flex;align-items:center;justify-content:space-between}.home-plan-top span{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:#eef0ff;color:#5b5ce2}.home-plan-top small{font-size:10px;font-weight:800;color:#8a94a0}.home-plan-card>strong{display:block;margin:13px 0}.home-progress{height:7px;background:#edf0f4;border-radius:99px;overflow:hidden}.home-progress i{display:block;height:100%;background:#5b5ce2;border-radius:99px}.home-plan-bottom{display:flex;justify-content:space-between;margin-top:10px}.home-plan-bottom small{font-size:10px;color:#8a94a0;text-transform:uppercase}.home-plan-bottom b{font-size:11px;color:#5b5ce2}@media(max-width:800px){.home-access-grid{grid-template-columns:repeat(3,1fr)}.home-plans-row{grid-template-columns:repeat(3,260px);overflow-x:auto}.home-verse-hero{min-height:210px}}@media(max-width:600px){.home-featured-grid{grid-template-columns:1fr}.home-access-grid{grid-template-columns:repeat(2,1fr)}.home-verse-hero{display:block;padding:24px;min-height:0}.home-verse-button{margin-top:18px}.home-title{font-size:28px}.home-subtitle{font-size:12px}}
+'''
+              path.write_text(text, encoding='utf-8')
+
+      - name: Verify and publish
+        run: |
+          npm ci
+          npm run build
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+users.noreply.github.com"
+          git add src/App.tsx src/index.css
+          git commit -m "Apply active HomeScreen redesign" || exit 0
+          git push
+
+      - name: Remove temporary workflow
+        if: success()
+        shell: bash
+        run: |
+          git rm .github/workflows/apply-home-now.yml || true
+          git commit -m "Remove temporary home workflow" || true
+          git push || true
