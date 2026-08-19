@@ -1,0 +1,107 @@
+/* Home launcher: content-first layout inspired by modern mobile app home screens. */
+.ss-access-hero {
+  min-height: 190px;
+  background:
+    radial-gradient(circle at 82% 20%, rgba(214,168,79,.24), transparent 25%),
+    radial-gradient(circle at 15% 110%, rgba(64,139,151,.18), transparent 32%),
+    linear-gradient(135deg,#102d32,#17434a 58%,#1f514f);
+}
+
+.ss-access-hero:before {
+  content:'';
+  position:absolute;
+  inset:0;
+  background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.025) 35%,transparent 70%);
+  pointer-events:none;
+}
+
+.ss-access-resume {
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+
+/* The first four actions are the primary destinations. */
+.ss-access-grid > .ss-access-tile:nth-child(-n+4) {
+  min-height:158px;
+}
+
+.ss-access-grid > .ss-access-tile:nth-child(-n+4) .ss-access-icon {
+  width:60px;
+  height:60px;
+  border-radius:18px;
+}
+
+.ss-access-grid > .ss-access-tile:nth-child(-n+4) .ss-access-label {
+  font-size:14px;
+}
+
+.ss-access-grid > .ss-access-tile:nth-child(-n+4):after {
+  content:'→';
+  position:absolute;
+  right:13px;
+  top:12px;
+  color:var(--tile-color);
+  opacity:.55;
+  font-size:14px;
+  font-weight:900;
+}
+
+.ss-access-grid > .ss-access-tile:nth-child(1) {
+  background:linear-gradient(145deg,color-mix(in srgb,#c99732 10%,var(--ss-panel)),var(--ss-panel));
+}
+
+.ss-access-grid > .ss-access-tile:nth-child(2) {
+  background:linear-gradient(145deg,color-mix(in srgb,#7463c5 9%,var(--ss-panel)),var(--ss-panel));
+}
+
+.ss-access-grid > .ss-access-tile:nth-child(3) {
+  background:linear-gradient(145deg,color-mix(in srgb,#c95d79 9%,var(--ss-panel)),var(--ss-panel));
+}
+
+.ss-access-grid > .ss-access-tile:nth-child(4) {
+  background:linear-gradient(145deg,color-mix(in srgb,#d9783e 9%,var(--ss-panel)),var(--ss-panel));
+}
+
+.ss-access-bottom {
+  margin-top:20px;
+}
+
+@media (max-width:700px) {
+  .ss-access-hero {
+    grid-template-columns:1fr;
+    padding:22px;
+  }
+
+  .ss-access-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:9px;
+  }
+
+  .ss-access-tile {
+    min-height:128px;
+  }
+
+  .ss-access-grid > .ss-access-tile:nth-child(-n+4) {
+    min-height:144px;
+  }
+
+  .ss-access-grid > .ss-access-tile:nth-child(-n+4) .ss-access-icon {
+    width:54px;
+    height:54px;
+  }
+
+  .ss-access-grid > .ss-access-tile:nth-child(-n+4) .ss-access-label {
+    font-size:13px;
+  }
+}
+
+@media (max-width:420px) {
+  .ss-access-hero h2 {
+    font-size:30px;
+  }
+
+  .ss-access-tile {
+    min-height:120px;
+    border-radius:19px;
+  }
+}
