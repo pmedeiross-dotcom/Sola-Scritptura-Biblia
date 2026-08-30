@@ -1,0 +1,1 @@
+Home V4 redesign is applied automatically by GitHub Actions after the next push and verified with npm run build.
