@@ -10,10 +10,20 @@
 - Home atualmente integrada: `HomeScreenV3`
 - Deploy: Vercel acompanha `main`
 
+## Estado atual
+
+- A rolagem do leitor bíblico foi ajustada para usar uma única área principal de rolagem.
+- O contêiner dos versículos deixou de ser uma segunda área de rolagem e não usa mais `max-h-[64vh]`/`max-h-[78vh]`.
+- O cálculo do versículo atualmente visível e o listener de rolagem foram direcionados para `screenScrollRef`.
+- O workflow temporário usado para aplicar a correção do leitor foi removido após a execução.
+- A tela de Estudo recebeu ajuste de área de rolagem no `StudyDashboard` para permitir navegação vertical do conteúdo.
+- A persistência de sessões de estudo continua usando `getStudyProgress`/`updateStudyProgress`.
+- A validação automática do novo commit do leitor ainda precisa ser confirmada; não marcar a etapa como totalmente validada até conferir `lint` e `build`.
+
 ## Decisões já tomadas
 
 1. Não fazer merge integral da PR #1 (`Refactor critical fixes`). Ela é draft, contém mudanças estruturais misturadas com alterações antigas e deve ser tratada apenas como fonte de correções aproveitáveis.
-2. Não usar workflows do GitHub Actions para reescrever automaticamente código-fonte da aplicação.
+2. Não usar workflows do GitHub Actions para reescrever automaticamente código-fonte da aplicação como arquitetura permanente. O workflow temporário do leitor foi apenas um mecanismo controlado de transição e já foi removido.
 3. Não iniciar outro redesign da Home antes de estabilizar as funções principais.
 4. Evitar substituições completas de `src/App.tsx` por operações GitHub Contents, porque o arquivo é grande e uma edição incorreta pode quebrar o aplicativo.
 5. Prioridade atual: estabilidade funcional antes de novas mudanças visuais.
@@ -22,19 +32,39 @@
 
 - O workflow `.github/workflows/apply-home-v4.yml` foi desativado para impedir alterações automáticas da Home.
 - A Home V4 não está sendo considerada a implementação ativa.
+- O workflow temporário `.github/workflows/fix-reader-scroll.yml` foi removido após aplicar a correção do leitor.
+
+## Correções realizadas
+
+### Leitor bíblico
+
+- Implementada a arquitetura de rolagem única no leitor.
+- `screenScrollRef` passou a ser a referência da área que efetivamente rola.
+- `updateCurrentVisibleVerse` passou a calcular o versículo visível com base no contêiner principal.
+- O listener de scroll passou a observar `screenScrollRef`.
+- `verseContainerRef` permanece para localizar os elementos dos versículos, mas não deve voltar a ser um contêiner rolável.
+- `goToVerse` continua localizando o versículo pelo atributo `data-verse-number` e usando `scrollIntoView`.
+- `activeCommentaryKey` e `saveCurrentLocation` continuam priorizando `currentVisibleVerse` quando disponível.
+
+### Estudo
+
+- Ajustada a estrutura de rolagem do `StudyDashboard`.
+- Mantida a lógica existente de seleção de plano, abertura de sessão e marcação de sessão concluída.
+- Mantida a persistência de progresso por meio de `getStudyProgress` e `updateStudyProgress`.
 
 ## Pendências prioritárias
 
 ### P0 - Leitor bíblico
-- Corrigir/validar rolagem dos versículos.
-- Garantir atualização do versículo atualmente visível durante a rolagem.
-- Corrigir `Ir para versículo` para navegar ao versículo solicitado.
-- Fazer salvamento/restauração da posição usar o versículo efetivamente visível quando apropriado.
+- Confirmar `npm run lint` e `npm run build` após a correção da rolagem.
+- Testar manualmente rolagem no desktop e celular.
+- Confirmar atualização do versículo atualmente visível durante a rolagem.
+- Confirmar `Ir para versículo`.
+- Confirmar salvamento/restauração da posição.
 - Validar botões de rolagem superior/inferior.
 
 ### P0 - Estudo e anotações
-- Auditar mecanismo real de salvamento.
-- Corrigir barras/áreas de rolagem da tela de estudo.
+- Auditar mecanismo real de salvamento das anotações.
+- Testar rolagem da tela de estudo após a correção.
 - Garantir persistência das anotações.
 
 ### P1 - Pesquisa
@@ -66,7 +96,6 @@
 
 - `selectReference` reconhecia `Livro capítulo:versículo`, mas uma implementação anterior descartava o versículo.
 - O estado `targetVerse` não deve ser usado sozinho para representar o versículo atualmente visível.
-- O leitor possui uma área de rolagem interna em `verseContainerRef`, portanto ouvir apenas `screenScrollRef` não é suficiente para detectar a rolagem dos versículos.
 - O rastreamento de atividade já foi identificado como desativado (`ENABLE_ACTIVITY_TRACKING = false`) e deve ser decidido: reativar corretamente ou remover a interface correspondente.
 - O botão de IA das confissões já foi identificado como sem implementação real e deve ser removido ou conectado a uma função válida.
 - O parser Strong atualmente pode não aceitar sufixos como `{H1234a}`.
