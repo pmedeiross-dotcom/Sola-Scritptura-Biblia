@@ -33,7 +33,7 @@ jobs:
         run: npm run build
 
       - name: Apply pending study and reader maintenance
-        if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, 'Fix study save and reader fallback scroll')
+        if: ${{ github.ref == 'refs/heads/main' && github.event.head_commit.message != 'Fix study save and reader fallback scroll' }}
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -131,9 +131,9 @@ jobs:
           path.write_text(text, encoding='utf-8')
           print('maintenance changes:', changed)
           PY
-          rm -f .github/workflows/apply-study-reader-fix.yml .github/workflows/fix-study-reader-trigger.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/apply-study-reader-fix.yml .github/workflows/fix-study-reader-trigger.txt
           git add src/App.tsx .github/workflows/apply-study-reader-fix.yml .github/workflows/fix-study-reader-trigger.txt .github/workflows/ci.yml
           if git diff --cached --quiet; then
             echo "No pending maintenance changes."
