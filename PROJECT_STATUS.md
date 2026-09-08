@@ -12,24 +12,23 @@
 
 ## Estado atual
 
-- A rolagem do leitor bíblico foi ajustada para usar uma única área principal de rolagem.
-- O contêiner dos versículos deixou de ser uma segunda área de rolagem e não usa mais `max-h-[64vh]`/`max-h-[78vh]`.
-- O cálculo do versículo atualmente visível e o listener de rolagem foram direcionados para `screenScrollRef`.
-- O workflow temporário usado para aplicar a correção do leitor foi removido após a execução.
-- A tela de Estudo recebeu ajuste de área de rolagem no `StudyDashboard` para permitir navegação vertical do conteúdo.
-- A persistência de sessões de estudo continua usando `getStudyProgress`/`updateStudyProgress`.
-- A validação automática do novo commit do leitor ainda precisa ser confirmada; não marcar a etapa como totalmente validada até conferir `lint` e `build`.
-- A auditoria das anotações encontrou dois mecanismos de persistência diferentes: o fluxo antigo do `App.tsx` grava anotações em `localStorage('notes')`, enquanto a `Library` e o serviço `db.ts` usam IndexedDB no store `notes`.
-- Essa divergência explica por que uma anotação criada no leitor pode não aparecer na Biblioteca, apesar de existir uma função `saveNote` no IndexedDB.
+- Leitor bíblico: rolagem estruturada em uma única área principal; a área de versículos e o fallback Markdown não devem criar uma segunda rolagem.
+- `screenScrollRef` é a área efetivamente rolável do leitor e também é usada para calcular o versículo visível.
+- A tela ativa de Estudo é `StudyScreen` dentro de `src/App.tsx`; `components/StudyDashboard.tsx` é uma implementação paralela e não deve ser confundida com a tela ativa.
+- O `StudyScreen` agora possui preparação para salvar o resultado da análise em Anotações por meio de `onAddNote`.
+- A correção foi aplicada por workflow temporário `.github/workflows/fix-study-and-reader.yml`; esse workflow ainda precisa concluir validação e auto-remoção antes de considerar a etapa concluída.
+- Não considerar CI/lint/build como aprovados até verificar os resultados reais do commit gerado.
+- A auditoria mostrou dois mecanismos de persistência de anotações: o fluxo ativo de `App.tsx` usa `localStorage('notes')`, enquanto existe uma implementação paralela em `components/Library.tsx`/`services/db.ts` baseada em IndexedDB.
+- Importante: a `LibraryScreen` atualmente renderizada pelo `App.tsx` recebe diretamente o estado `notes` do fluxo ativo. Portanto, não assumir que toda anotação criada no leitor está ausente da Biblioteca ativa. A divergência é principalmente entre a implementação ativa e a implementação paralela/legada de IndexedDB.
 
 ## Decisões já tomadas
 
 1. Não fazer merge integral da PR #1 (`Refactor critical fixes`). Ela é draft, contém mudanças estruturais misturadas com alterações antigas e deve ser tratada apenas como fonte de correções aproveitáveis.
-2. Não usar workflows do GitHub Actions para reescrever automaticamente código-fonte da aplicação como arquitetura permanente. O workflow temporário do leitor foi apenas um mecanismo controlado de transição e já foi removido.
+2. Não usar workflows do GitHub Actions para reescrever automaticamente código-fonte da aplicação como arquitetura permanente. Workflows temporários podem ser usados apenas como mecanismo controlado de transição e devem ser removidos depois.
 3. Não iniciar outro redesign da Home antes de estabilizar as funções principais.
 4. Evitar substituições completas de `src/App.tsx` por operações GitHub Contents, porque o arquivo é grande e uma edição incorreta pode quebrar o aplicativo.
 5. Prioridade atual: estabilidade funcional antes de novas mudanças visuais.
-6. Unificar a persistência das anotações antes de considerar a funcionalidade concluída. A solução deve preservar anotações existentes e evitar perda de dados.
+6. Não migrar ou apagar a persistência das anotações sem primeiro preservar os dados existentes e confirmar qual implementação de Biblioteca deve permanecer como arquitetura oficial.
 
 ## Limpeza realizada
 
@@ -45,41 +44,51 @@
 - `screenScrollRef` passou a ser a referência da área que efetivamente rola.
 - `updateCurrentVisibleVerse` passou a calcular o versículo visível com base no contêiner principal.
 - O listener de scroll passou a observar `screenScrollRef`.
-- `verseContainerRef` permanece para localizar os elementos dos versículos, mas não deve voltar a ser um contêiner rolável.
-- `goToVerse` continua localizando o versículo pelo atributo `data-verse-number` e usando `scrollIntoView`.
+- O contêiner estruturado dos versículos não possui mais `overflow-y-auto` nem `max-h-[64vh]`/`max-h-[78vh]`.
+- O fallback Markdown também foi ajustado para não criar uma segunda área de rolagem.
+- `verseContainerRef` permanece para localizar elementos dos versículos, não para controlar a rolagem.
+- `goToVerse` continua localizando o versículo por `data-verse-number` e usando `scrollIntoView`.
 - `activeCommentaryKey` e `saveCurrentLocation` continuam priorizando `currentVisibleVerse` quando disponível.
 
 ### Estudo
 
-- Ajustada a estrutura de rolagem do `StudyDashboard`.
-- Mantida a lógica existente de seleção de plano, abertura de sessão e marcação de sessão concluída.
-- Mantida a persistência de progresso por meio de `getStudyProgress` e `updateStudyProgress`.
+- A área ativa `StudyScreen` recebeu rolagem própria com `studyScrollRef`.
+- Foram mantidos botões de ir ao topo/fim e atualização de visibilidade durante o scroll.
+- As preferências de estudo continuam persistidas em `localStorage('study-analysis-preferences')`.
+- O `StudyScreen` passou a aceitar `onAddNote`.
+- Foi acrescentada a ação para salvar o resultado completo da análise em Anotações.
+- O salvamento usa o mecanismo ativo do `App.tsx`, sem migrar ainda para IndexedDB.
+- A persistência de sessões do `StudyDashboard` paralelo continua usando `getStudyProgress`/`updateStudyProgress`.
 
 ### Anotações
 
-- Confirmado que `services/db.ts` possui o store IndexedDB `notes`, além de `saveNote`, `getStoredNotes` e `deleteNote`.
-- Confirmado que `components/Library.tsx` salva novas anotações diretamente no IndexedDB e carrega as anotações desse store.
-- Confirmado que o fluxo legado do `App.tsx` mantém outro conjunto de anotações em `localStorage`.
-- Próxima correção: migrar de forma segura as anotações legadas do `localStorage` para IndexedDB e então remover a duplicidade de persistência quando for possível fazê-lo sem risco de perda de dados.
+- Confirmado que o fluxo ativo `LibraryScreen` recebe `notes`, `onUpdateNote` e `onDeleteNote` do `App.tsx`.
+- Confirmado que `components/Library.tsx` e `services/db.ts` constituem uma implementação paralela de notas em IndexedDB.
+- A decisão atual é não migrar automaticamente para IndexedDB até mapear completamente o fluxo ativo, exportação/importação e compatibilidade com dados existentes.
 
 ## Pendências prioritárias
 
-### P0 - Leitor bíblico
-- Confirmar `npm run lint` e `npm run build` após a correção da rolagem.
-- Testar manualmente rolagem no desktop e celular.
+### P0 - Validação do leitor e estudo
+- Verificar a execução real do workflow temporário e o commit produzido.
+- Confirmar `npm run lint`.
+- Confirmar `npm run build`.
+- Testar manualmente rolagem do leitor no desktop e celular.
 - Confirmar atualização do versículo atualmente visível durante a rolagem.
 - Confirmar `Ir para versículo`.
 - Confirmar salvamento/restauração da posição.
-- Validar botões de rolagem superior/inferior.
+- Validar botões de rolagem superior/inferior do leitor.
+- Testar rolagem da tela ativa de Estudo.
+- Testar geração de análise e o botão `Salvar estudo em Anotações`.
+- Recarregar a aplicação e confirmar recuperação da anotação salva.
 
-### P0 - Estudo e anotações
-- Testar rolagem da tela de estudo após a correção.
-- Unificar a persistência das anotações entre leitor e Biblioteca.
-- Migrar anotações legadas de `localStorage` sem perda de dados.
-- Garantir persistência após recarregar a aplicação.
+### P0 - Anotações e persistência
+- Mapear completamente `notes` no `App.tsx`: criação, edição, exclusão, tags, notebooks, destaque, exportação e importação.
+- Confirmar que a anotação de estudo salva pelo novo fluxo aparece na `LibraryScreen` ativa.
+- Avaliar a implementação paralela IndexedDB antes de decidir sua remoção, migração ou integração.
+- Garantir que qualquer migração preserve dados existentes.
 
 ### P1 - Pesquisa
-- Corrigir navegação de referências no formato `Livro capítulo:versículo`.
+- Corrigir e validar navegação de referências no formato `Livro capítulo:versículo`.
 - Preservar capítulo e versículo na navegação.
 
 ### P1 - Persistência
@@ -93,7 +102,7 @@
 - Rodar `npm run lint`, `npm run build` e `npm run check` antes de considerar uma etapa concluída.
 
 ### P2 - Arquitetura
-- Eliminar workflows/scripts temporários de redesign que não tenham função.
+- Eliminar workflows/scripts temporários de correção depois de cumprirem sua finalidade.
 - Reduzir código morto.
 - Centralizar lógica duplicada, como perfil/objetivos de estudo.
 - Avaliar code splitting de serviços estáticos.
@@ -105,10 +114,10 @@
 
 ## Problemas conhecidos levantados anteriormente
 
-- `selectReference` reconhecia `Livro capítulo:versículo`, mas uma implementação anterior descartava o versículo.
+- `selectReference` reconhece `Livro capítulo:versículo`; validar preservação efetiva do versículo no fluxo completo.
 - O estado `targetVerse` não deve ser usado sozinho para representar o versículo atualmente visível.
 - O rastreamento de atividade já foi identificado como desativado (`ENABLE_ACTIVITY_TRACKING = false`) e deve ser decidido: reativar corretamente ou remover a interface correspondente.
-- O botão de IA das confissões já foi identificado como sem implementação real e deve ser removido ou conectado a uma função válida.
+- O botão de IA das confissões foi identificado como sem implementação real e deve ser removido ou conectado a uma função válida.
 - O parser Strong atualmente pode não aceitar sufixos como `{H1234a}`.
 - O parser de versos pode confundir linhas de continuação iniciadas por números dependendo do formato importado.
 
