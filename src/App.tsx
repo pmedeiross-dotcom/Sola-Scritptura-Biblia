@@ -1157,7 +1157,7 @@ const BibleScreen = ({
   const screenScrollRef = useRef<HTMLDivElement | null>(null);
   const scrollButtonsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
  const updateCurrentVisibleVerse = () => {
-  const container = verseContainerRef.current;
+  const container = screenScrollRef.current;
   if (!container) return;
 
   const verseElements = Array.from(
@@ -1689,7 +1689,7 @@ useEffect(() => {
 }, [content, analysis, isFocusMode, showSearch]);
 
 useEffect(() => {
-  const container = verseContainerRef.current;
+  const container = screenScrollRef.current;
   if (!container) return;
 
   const handleVerseScroll = () => {
@@ -2067,7 +2067,7 @@ useEffect(() => {
             <div className="space-y-5">
               <div className="rounded-[1.75rem] bg-[#efe4c8] dark:bg-[#2a241d] border border-[#d7c7a2] dark:border-[#3a3228] shadow-inner px-4 sm:px-5 py-4 sm:py-5">
                 {verses.length > 0 ? (
-                  <div ref={verseContainerRef} className={cn("space-y-2.5 overflow-y-auto pr-1.5", isFocusMode ? "max-h-[78vh]" : "max-h-[64vh]")}>
+                  <div ref={verseContainerRef} className="space-y-2.5 pr-1.5">
                     {verses.map(v => (
                       <p
                         key={`${v.number}-${v.text.slice(0, 24)}`}
