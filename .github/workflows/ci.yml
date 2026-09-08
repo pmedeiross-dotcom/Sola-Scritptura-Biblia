@@ -33,8 +33,9 @@ jobs:
         run: npm run build
 
       - name: Apply pending study and reader maintenance
-        if: ${{ github.ref == 'refs/heads/main' && github.event.head_commit.message != 'Fix study save and reader fallback scroll' }}
         run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then exit 0; fi
+          if git log -1 --pretty=%B | grep -q "Fix study save and reader fallback scroll"; then exit 0; fi
           python - <<'PY'
           from pathlib import Path
           path = Path('src/App.tsx')
