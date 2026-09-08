@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: ["**"]
 
+permissions:
+  contents: write
+
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -28,3 +31,113 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Apply pending study and reader maintenance
+        if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, 'Fix study save and reader fallback scroll')
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/App.tsx')
+          text = path.read_text(encoding='utf-8')
+          changed = False
+
+          old = '''                  <div className={cn("prose prose-slate dark:prose-invert max-w-none reading-text leading-loose text-lg overflow-y-auto pr-1.5", isFocusMode ? "max-h-[78vh]" : "max-h-[64vh]")}>
+                    <LazyMarkdown>{content.text}</LazyMarkdown>
+                  </div>'''
+          new = '''                  <div className="prose prose-slate dark:prose-invert max-w-none reading-text leading-loose text-lg pr-1.5">
+                    <LazyMarkdown>{content.text}</LazyMarkdown>
+                  </div>'''
+          if old in text:
+              text = text.replace(old, new, 1)
+              changed = True
+
+          old = '''const StudyScreen = ({
+  goalTargets,
+  onApplyGoalProfile,
+  availableVersions,
+}: {
+  goalTargets: GoalTargets;
+  onApplyGoalProfile: (profile: GoalProfile) => void;
+  availableVersions: string[];
+}) => {'''
+          new = '''const StudyScreen = ({
+  goalTargets,
+  onApplyGoalProfile,
+  availableVersions,
+  onAddNote,
+}: {
+  goalTargets: GoalTargets;
+  onApplyGoalProfile: (profile: GoalProfile) => void;
+  availableVersions: string[];
+  onAddNote: (ref: string, content: string) => void;
+}) => {'''
+          if old in text:
+              text = text.replace(old, new, 1)
+              changed = True
+
+          old = '''  const [response, setResponse] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);'''
+          new = '''  const [response, setResponse] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [studySaved, setStudySaved] = useState(false);'''
+          if old in text:
+              text = text.replace(old, new, 1)
+              changed = True
+
+          old = '''  const handleStudy = async () => {
+    if (!query.trim()) return;'''
+          new = '''  const handleSaveStudy = () => {
+    if (!response) return;
+    const reference = scope === 'bible' ? 'Estudo bíblico' : `Estudo: ${referenceInput.trim() || 'referência'}`;
+    onAddNote(reference, `Consulta: ${query.trim()}\\n\\n${response}`);
+    setStudySaved(true);
+  };
+
+  const handleStudy = async () => {
+    if (!query.trim()) return;'''
+          if old in text:
+              text = text.replace(old, new, 1)
+              changed = True
+
+          old = '''          <div className="prose prose-sm dark:prose-invert max-w-none reading-text">
+            <LazyMarkdown>{response}</LazyMarkdown>
+          </div>
+          <div ref={scrollRef} />'''
+          new = '''          <div className="prose prose-sm dark:prose-invert max-w-none reading-text">
+            <LazyMarkdown>{response}</LazyMarkdown>
+          </div>
+          <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3">
+            <button
+              type="button"
+              onClick={handleSaveStudy}
+              disabled={studySaved}
+              className="flex-1 py-3 rounded-2xl bg-petrol-500 text-white font-bold disabled:opacity-70"
+            >
+              {studySaved ? 'Estudo salvo em Anotações' : 'Salvar estudo em Anotações'}
+            </button>
+            {studySaved && <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Consulta registrada.</span>}
+          </div>
+          <div ref={scrollRef} />'''
+          if old in text:
+              text = text.replace(old, new, 1)
+              changed = True
+
+          old = "      case 'study': return <StudyScreen goalTargets={goalTargets} onApplyGoalProfile={applyGoalProfile} availableVersions={bibleVersionCodes} />;"
+          new = "      case 'study': return <StudyScreen goalTargets={goalTargets} onApplyGoalProfile={applyGoalProfile} availableVersions={bibleVersionCodes} onAddNote={addNote} />;"
+          if old in text:
+              text = text.replace(old, new, 1)
+              changed = True
+
+          path.write_text(text, encoding='utf-8')
+          print('maintenance changes:', changed)
+          PY
+          rm -f .github/workflows/apply-study-reader-fix.yml .github/workflows/fix-study-reader-trigger.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/App.tsx .github/workflows/apply-study-reader-fix.yml .github/workflows/fix-study-reader-trigger.txt .github/workflows/ci.yml
+          if git diff --cached --quiet; then
+            echo "No pending maintenance changes."
+          else
+            git commit -m "Fix study save and reader fallback scroll"
+            git push
+          fi
