@@ -53,7 +53,7 @@ const StudyDashboard: React.FC<StudyDashboardProps> = ({ onJumpToBible, onJumpTo
   if (selectedPlan) {
     const currentCompleted = completedIds[selectedPlan.id] || [];
     return (
-      <div className="flex flex-col h-full bg-paper-50 dark:bg-navy-900 animate-fade-in">
+      <div className="flex flex-col h-full min-h-0 overflow-y-auto overscroll-y-contain bg-paper-50 dark:bg-navy-900 animate-fade-in">
         <div className="p-6">
           <button 
             onClick={() => setSelectedPlanId(null)}
@@ -118,7 +118,7 @@ const StudyDashboard: React.FC<StudyDashboardProps> = ({ onJumpToBible, onJumpTo
   }
 
   return (
-    <div className="flex flex-col h-full bg-paper-50 dark:bg-navy-900 pb-24">
+    <div className="flex flex-col h-full min-h-0 overflow-y-auto overscroll-y-contain bg-paper-50 dark:bg-navy-900 pb-24">
       <div className="p-6">
         <h1 className="font-serif text-2xl font-bold text-petrol-900 dark:text-white mb-2">Planos de Estudo</h1>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
