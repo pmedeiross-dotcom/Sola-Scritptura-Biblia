@@ -1,29 +1,12 @@
-name: Apply Home V4
+# Home V4 is maintained directly in the application source.
+# This workflow is intentionally disabled to prevent automated source rewriting.
+name: Home V4 (disabled)
+
 on:
-  push:
-    branches: [main]
-permissions:
-  contents: write
+  workflow_dispatch:
+
 jobs:
-  apply:
-    if: github.event.head_commit.message != 'Apply Home V4 redesign'
+  disabled:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Apply redesign
-        run: python3 scripts/switch_home_v4.py
-      - name: Verify build
-        run: |
-          npm ci
-          npm run build
-      - name: Commit redesign
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          rm -f scripts/switch_home_v4.py .github/workflows/apply-home-v4.yml
-          git add src/App.tsx src/index.css src/components/HomeScreenV4.tsx scripts/switch_home_v4.py .github/workflows/apply-home-v4.yml
-          git commit -m "Apply Home V4 redesign"
-          git push
+      - run: echo "Disabled: Home V4 must be changed through normal source control."
