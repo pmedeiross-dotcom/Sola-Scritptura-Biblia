@@ -19,6 +19,8 @@
 - A tela de Estudo recebeu ajuste de área de rolagem no `StudyDashboard` para permitir navegação vertical do conteúdo.
 - A persistência de sessões de estudo continua usando `getStudyProgress`/`updateStudyProgress`.
 - A validação automática do novo commit do leitor ainda precisa ser confirmada; não marcar a etapa como totalmente validada até conferir `lint` e `build`.
+- A auditoria das anotações encontrou dois mecanismos de persistência diferentes: o fluxo antigo do `App.tsx` grava anotações em `localStorage('notes')`, enquanto a `Library` e o serviço `db.ts` usam IndexedDB no store `notes`.
+- Essa divergência explica por que uma anotação criada no leitor pode não aparecer na Biblioteca, apesar de existir uma função `saveNote` no IndexedDB.
 
 ## Decisões já tomadas
 
@@ -27,6 +29,7 @@
 3. Não iniciar outro redesign da Home antes de estabilizar as funções principais.
 4. Evitar substituições completas de `src/App.tsx` por operações GitHub Contents, porque o arquivo é grande e uma edição incorreta pode quebrar o aplicativo.
 5. Prioridade atual: estabilidade funcional antes de novas mudanças visuais.
+6. Unificar a persistência das anotações antes de considerar a funcionalidade concluída. A solução deve preservar anotações existentes e evitar perda de dados.
 
 ## Limpeza realizada
 
@@ -52,6 +55,13 @@
 - Mantida a lógica existente de seleção de plano, abertura de sessão e marcação de sessão concluída.
 - Mantida a persistência de progresso por meio de `getStudyProgress` e `updateStudyProgress`.
 
+### Anotações
+
+- Confirmado que `services/db.ts` possui o store IndexedDB `notes`, além de `saveNote`, `getStoredNotes` e `deleteNote`.
+- Confirmado que `components/Library.tsx` salva novas anotações diretamente no IndexedDB e carrega as anotações desse store.
+- Confirmado que o fluxo legado do `App.tsx` mantém outro conjunto de anotações em `localStorage`.
+- Próxima correção: migrar de forma segura as anotações legadas do `localStorage` para IndexedDB e então remover a duplicidade de persistência quando for possível fazê-lo sem risco de perda de dados.
+
 ## Pendências prioritárias
 
 ### P0 - Leitor bíblico
@@ -63,9 +73,10 @@
 - Validar botões de rolagem superior/inferior.
 
 ### P0 - Estudo e anotações
-- Auditar mecanismo real de salvamento das anotações.
 - Testar rolagem da tela de estudo após a correção.
-- Garantir persistência das anotações.
+- Unificar a persistência das anotações entre leitor e Biblioteca.
+- Migrar anotações legadas de `localStorage` sem perda de dados.
+- Garantir persistência após recarregar a aplicação.
 
 ### P1 - Pesquisa
 - Corrigir navegação de referências no formato `Livro capítulo:versículo`.
