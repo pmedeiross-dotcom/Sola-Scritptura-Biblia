@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: ["**"]
 
+permissions:
+  contents: write
+
 jobs:
   quality:
     runs-on: ubuntu-latest
@@ -28,3 +31,32 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  consolidate-study-scroll:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Consolidate Study scroll
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/App.tsx')
+          text = path.read_text(encoding='utf-8')
+          old = '<main className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch] relative lg:w-full lg:max-w-6xl lg:mx-auto">'
+          new = '<main className={cn("flex-1 min-h-0 overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch] relative lg:w-full lg:max-w-6xl lg:mx-auto", screen === \'study\' ? "overflow-hidden" : "overflow-y-auto") }>'
+          if old not in text:
+              raise SystemExit('Expected main scroll container not found')
+          text = text.replace(old, new, 1)
+          path.write_text(text, encoding='utf-8')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/App.tsx .github/workflows/ci.yml
+          git commit -m "Consolidate study screen scrolling"
+          git push
