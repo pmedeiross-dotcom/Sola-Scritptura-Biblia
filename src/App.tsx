@@ -4975,7 +4975,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch] relative lg:w-full lg:max-w-6xl lg:mx-auto">
+      <main className={cn("flex-1 min-h-0 overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch] relative lg:w-full lg:max-w-6xl lg:mx-auto", screen === 'study' ? "overflow-hidden" : "overflow-y-auto") }>
         <AnimatePresence mode="wait">
           <motion.div
             key={screen}
