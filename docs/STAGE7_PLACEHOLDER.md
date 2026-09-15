@@ -1,1 +1,0 @@
-Temporary stage 7 integration branch marker.
