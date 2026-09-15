@@ -1,0 +1,57 @@
+name: Stage 7 finalize
+on:
+  push:
+    branches:
+      - stage-7-finalize
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Patch App
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('src/App.tsx')
+          s = p.read_text()
+          if "from './activityTracking'" not in s:
+              anchor = "import HomeScreenV3 from './components/HomeScreenV3';"
+              if anchor not in s:
+                  raise SystemExit('import anchor not found')
+              s = s.replace(anchor, anchor + "\nimport { appendActivityEvent, readActivityEvents } from './activityTracking';", 1)
+          s = s.replace('const ENABLE_ACTIVITY_TRACKING = false;', 'const ENABLE_ACTIVITY_TRACKING = true;', 1)
+          s = s.replace('const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([]);', 'const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>(() => readActivityEvents());', 1)
+          old = '''  const trackActivity = (type: string, label: string) => {\n    if (!ENABLE_ACTIVITY_TRACKING) return;\n    if (isUselessActivityEvent({ type, label })) return;\n\n    setActivityEvents(prev => {\n      const next = [{ id: `${Date.now()}-${Math.random()}`, type, label, timestamp: Date.now() }, ...prev].slice(0, 200);\n      localStorage.setItem('activity-events-v1', JSON.stringify(next));\n      return next;\n    });\n  };'''
+          new = '''  const trackActivity = (type: string, label: string) => {\n    if (!ENABLE_ACTIVITY_TRACKING) return;\n    setActivityEvents(prev => appendActivityEvent(prev, type, label));\n  };'''
+          if old in s:
+              s = s.replace(old, new, 1)
+          elif 'setActivityEvents(prev => appendActivityEvent(prev, type, label));' not in s:
+              pattern = r"  const trackActivity = \(type: string, label: string\) => \{.*?\n  \};"
+              s, n = re.subn(pattern, new, s, count=1, flags=re.S)
+              if n != 1:
+                  raise SystemExit('trackActivity block not found')
+          wipe = r"\n  useEffect\(\(\) => \{\n    localStorage\.removeItem\('activity-events-v1'\);\n    setActivityEvents\(\[\]\);\n  \}, \[\]\);\n"
+          s, n = re.subn(wipe, '\n', s, count=1)
+          p.write_text(s)
+          PY
+      - name: Validate
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+          npm run check
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/App.tsx
+          git diff --cached --quiet || git commit -m "feat: integrate persistent activity tracking"
+          git push
