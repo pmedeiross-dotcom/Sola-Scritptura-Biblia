@@ -1,0 +1,62 @@
+name: fix3
+on:
+  push:
+    branches: ["etapa-3-save-study"]
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Remove accidental state declarations
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('src/App.tsx'); s=p.read_text(encoding='utf-8')
+          needle="  const [studySaved, setStudySaved] = useState(false);\n"
+          positions=[]; start=0
+          while True:
+            i=s.find(needle,start)
+            if i<0: break
+            positions.append(i); start=i+len(needle)
+          if len(positions) != 3: raise SystemExit(f'expected 3 declarations, found {len(positions)}')
+          s=s[:positions[2]]+s[positions[2]+len(needle):]
+          positions=[]; start=0
+          while True:
+            i=s.find(needle,start)
+            if i<0: break
+            positions.append(i); start=i+len(needle)
+          if len(positions) != 2: raise SystemExit(f'expected 2 after cleanup, found {len(positions)}')
+          s=s[:positions[0]]+s[positions[0]+len(needle):]
+          p.write_text(s,encoding='utf-8')
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - name: Update status and cleanup
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('PROJECT_STATUS.md')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('### Etapa 3 — Salvar Estudos em Anotações\n- 🟡 Em andamento.', '### Etapa 3 — Salvar Estudos em Anotações\n- 🟢 Concluída.')
+          s=s.replace('### 2026-09-14\n', '### 2026-09-15\n- Implementado o salvamento de estudos em Anotações a partir da StudyScreen.\n- O registro preserva a consulta e a resposta gerada, com referência contextual.\n- Validados lint e build após a implementação.\n\n### 2026-09-14\n')
+          p.write_text(s,encoding='utf-8')
+          
+          
+          
+      - name: Commit and cleanup workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/App.tsx PROJECT_STATUS.md
+          git rm .github/workflows/fix3.yml
+          git commit -m "fix: clean study save implementation"
+          git push
