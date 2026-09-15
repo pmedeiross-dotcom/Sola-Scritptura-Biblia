@@ -17,7 +17,7 @@
 3. Salvar Estudo em Anotações: **CONCLUÍDA**
 4. Auditoria de Anotações e persistência: **CONCLUÍDA — auditoria realizada; migração IndexedDB/localStorage ainda não executada**
 5. Importação/exportação: **CONCLUÍDA — implementação existente auditada e documentada**
-6. Progresso de estudo: **EM ANDAMENTO — integração inicial com a Home concluída; integração com a tela ativa de planos/backup ainda pendente**
+6. Progresso de estudo: **CONCLUÍDA**
 7. Rastreamento de atividade: **CONCLUÍDA**
 8. Parser bíblico e Strong: **PENDENTE**
 9. Confissões/IA: **PENDENTE**
@@ -25,12 +25,18 @@
 11. Qualidade, CI e Vercel: **EM ANDAMENTO**
 12. Evolução visual da Home: **PENDENTE**
 
-## Etapa 6: Progresso de estudo — em andamento
+## Etapa 6: Progresso de estudo — concluída
 
 - `src/studyProgress.ts` é a fonte persistente versionada para dias explicitamente concluídos.
 - Chave: `study-progress-v1`.
-- `HomeScreenV3` já consome o progresso real e permite concluir o próximo dia dos planos estáticos.
-- Pendências: integrar a tela ativa de planos, fazer `Continuar` respeitar o próximo dia não concluído, incluir no backup/restauração e validar persistência completa.
+- `HomeScreenV3` consome o progresso real e permite concluir o próximo dia dos planos estáticos.
+- A tela ativa de Planos de Leitura consome o mesmo estado persistente.
+- O progresso percentual e o próximo dia dos planos estáticos são derivados dos registros reais.
+- `Continuar Leitura` resolve o próximo dia com base no progresso persistente.
+- A tela ativa permite concluir o próximo dia explicitamente.
+- Backup/restauração inclui `studyProgress`.
+- A integração foi validada com `npm ci`, `npm run lint` e `npm run build` no workflow da etapa.
+- Planos personalizados mantêm a lógica existente baseada em cronograma/data; não houve migração automática para conclusão diária.
 
 ## Etapa 7: Rastreamento de atividade — concluída
 
@@ -68,6 +74,6 @@
 
 ### 2026-09-15
 
-- Etapa 7 concluída: rastreamento persistente integrado ao fluxo ativo, sem limpeza automática na montagem.
-- `docs/ETAPA_7.md` atualizado com a implementação final e validação.
-- A Etapa 6 permanece **EM ANDAMENTO** pelas pendências de integração da tela ativa de planos e backup.
+- Etapa 6 concluída: progresso persistente integrado à Home e à tela ativa de Planos de Leitura, com conclusão explícita e inclusão no backup/restauração.
+- `docs/ETAPA_6.md` atualizado com implementação, validação e limite para planos personalizados.
+- Etapa 7 permanece concluída.
