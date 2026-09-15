@@ -44,7 +44,17 @@ Validação final realizada sobre o estado consolidado da `main`.
 
 Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, clareza das ações principais, continuidade de leitura/estudo e acabamento profissional, preservando as funcionalidades e a estabilidade conquistadas nas etapas anteriores.
 
-Próximo foco: auditar a Home atual, definir a hierarquia de conteúdo e ações prioritárias e implementar a primeira melhoria visual de baixo risco antes de qualquer redesign amplo.
+### Avanço registrado — 2026-09-15
+
+- A Home ativa permanece `HomeScreenV3`.
+- Foi aplicada a primeira camada visual dedicada da Home por meio de `src/home-v3.css`, importada diretamente pelo componente ativo.
+- A camada visual estabelece hierarquia para cabeçalho, versículo do dia, ações primárias, recursos, planos de leitura e continuidade da leitura.
+- Foram incluídos comportamentos responsivos para desktop, tablet e mobile, além de estados visuais para tema escuro.
+- A implementação preserva a lógica existente de navegação, progresso dos planos, compartilhamento do versículo e retomada da leitura.
+- Commit da implementação visual: `4de77862f238813ec6da760c0575d51b9a1ca58c`.
+- Status Vercel do commit: `success`.
+
+Próximo foco: refinar a hierarquia da Home com atenção especial à ação principal de continuidade de leitura/estudo, reduzir competição visual entre blocos e validar a experiência em larguras móveis sem alterar a lógica funcional.
 
 ## Problemas conhecidos / pontos para revisão posterior
 
@@ -72,4 +82,4 @@ Próximo foco: auditar a Home atual, definir a hierarquia de conteúdo e ações
 - Status Vercel do commit de produção validado como `success`.
 - Workflow legado de Home V4 confirmado como desativado.
 - Etapa 11 concluída sem necessidade de alteração funcional.
-- Etapa 12 iniciada para evolução visual da Home.
+- Etapa 12 segue em andamento com a primeira camada visual dedicada já registrada.
