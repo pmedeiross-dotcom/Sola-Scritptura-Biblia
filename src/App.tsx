@@ -1497,36 +1497,33 @@ const BibleScreen = ({
   };
 
   const selectReference = (ref: string) => {
-  // Basic parser for "Book Chapter:Verse" or "Book Chapter"
-  const parts = ref.trim().split(' ');
-  const chapterPart = parts.pop();
-  const bookName = parts.join(' ');
+    const normalizedRef = ref.trim().replace(/\s+/g, ' ');
+    if (!normalizedRef) return;
 
-  const foundBook = BOOKS.find(
-    b => b.name.toLowerCase() === bookName.toLowerCase()
-  );
+    const match = normalizedRef.match(/\s(\d+)(?::(\d+))?$/);
+    if (!match || match.index === undefined) return;
 
-  if (foundBook) {
+    const bookName = normalizedRef.slice(0, match.index).trim();
+    const foundBook = BOOKS.find(
+      candidate => candidate.name.toLowerCase() === bookName.toLowerCase()
+    );
+    if (!foundBook) return;
+
+    const selectedChapter = Number(match[1]);
+    const selectedVerse = match[2] ? Number(match[2]) : null;
+    if (selectedChapter < 1 || selectedChapter > foundBook.chapters) return;
+    if (selectedVerse !== null && selectedVerse < 1) return;
+
     setBook(foundBook);
-
-    const [chapterText, verseText] = (chapterPart || '1').split(':');
-    const c = parseInt(chapterText || '1', 10);
-    const v = verseText ? parseInt(verseText, 10) : null;
-
-    setChapter(c);
-
-    if (v !== null && !Number.isNaN(v)) {
-      setTargetVerse(String(v));
-      setPendingVerseJump(v);
-    }
-
+    setChapter(selectedChapter);
+    setTargetVerse(selectedVerse === null ? '' : String(selectedVerse));
+    setPendingVerseJump(selectedVerse);
     setShowSearch(false);
     setSearchQuery('');
     setSearchResults([]);
     setSearchError(null);
     setHasSearched(false);
-  }
-};
+  };
   const handleShare = async () => {
     if (navigator.share && content) {
       try {

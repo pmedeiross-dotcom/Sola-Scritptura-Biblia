@@ -108,6 +108,12 @@ Uma etapa só deve ser marcada como concluída quando:
 
 ### 2026-09-15
 
+- Integrado o parser robusto ao fluxo `busca → referência → Reader → versículo`.
+- Referências com livros numerados, como `1 João` e `1 Coríntios`, são reconhecidas.
+
+
+### 2026-09-15
+
 - Concluída e integrada a Etapa 3: salvamento de estudos em Anotações.
 - Corrigidos estados acidentais inseridos em telas que não pertenciam à Etapa 3.
 - Atualizado este registro para refletir as Etapas 2 e 3 como concluídas.
