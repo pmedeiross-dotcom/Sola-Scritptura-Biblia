@@ -15,8 +15,8 @@
 1. Leitor: rolagem e navegação: **CONCLUÍDA**
 2. Estudo: rolagem e controles: **CONCLUÍDA**
 3. Salvar Estudo em Anotações: **CONCLUÍDA**
-4. Auditoria de Anotações e persistência: **CONCLUÍDA**
-5. Importação/exportação: **CONCLUÍDA**
+4. Auditoria de Anotações e persistência: **CONCLUÍDA — auditoria realizada; migração IndexedDB/localStorage ainda não executada**
+5. Importação/exportação: **CONCLUÍDA — implementação existente auditada e documentada**
 6. Progresso de estudo: **PENDENTE**
 7. Rastreamento de atividade: **PENDENTE**
 8. Parser bíblico e Strong: **PENDENTE**
@@ -61,12 +61,12 @@
 
 ## Etapa 4 concluída: Auditoria de Anotações e persistência
 
-- O fluxo ativo `App.tsx` usa `localStorage('notes')`.
-- A `LibraryScreen` atualmente renderizada pelo `App.tsx` recebe diretamente o estado `notes`, `onUpdateNote` e `onDeleteNote`.
-- Existe uma implementação paralela em `components/Library.tsx`/`services/db.ts` baseada em IndexedDB.
-- A coexistência dos mecanismos foi documentada em `docs/ETAPA_4.md`.
-- Não foi feita migração ou exclusão destrutiva de dados.
-- A fonte ativa permanece o estado/persistência de `App.tsx`; o IndexedDB legado permanece isolado.
+- O fluxo ativo `App.tsx` usa `localStorage('notes')` e a `LibraryScreen` ativa recebe diretamente `notes`, `onUpdateNote` e `onDeleteNote`.
+- A implementação paralela/legada em `components/Library.tsx` e `services/db.ts` usa IndexedDB (`SolaScripturaDB`) com store `notes`.
+- Os dois mecanismos não são sincronizados atualmente.
+- O tipo `Note` contempla `tags`, `notebook` e `pinned` como campos opcionais já utilizados pelo fluxo ativo.
+- A etapa não migrou nem apagou dados; a unificação permanece para uma etapa arquitetural posterior, com estratégia reversível.
+- Auditoria detalhada registrada em `docs/ETAPA_4.md`.
 
 ## Etapa 5 concluída: Importação e exportação
 
@@ -79,6 +79,16 @@
 - A auditoria foi registrada em `docs/ETAPA_5.md`.
 - Nenhuma substituição destrutiva de `src/App.tsx` foi necessária nesta etapa.
 
+## Próxima etapa: Progresso de estudo
+
+Objetivo: consolidar a experiência de acompanhamento da leitura e estudo.
+
+- Mapear os estados de progresso já existentes.
+- Validar persistência e restauração do progresso.
+- Validar planos de leitura e localizações salvas.
+- Consolidar cálculo e apresentação de progresso.
+- Garantir continuidade da leitura a partir da Home.
+
 ## Problemas conhecidos
 
 - `ENABLE_ACTIVITY_TRACKING = false` e existe limpeza silenciosa de `activity-events-v1`; decidir entre reativar corretamente ou remover a interface correspondente.
@@ -87,6 +97,8 @@
 - O parser de versos pode confundir linhas de continuação iniciadas por números dependendo do formato importado.
 - Há duplicação de `activeGoalProfile` entre telas.
 - Code splitting de serviços está inconsistente.
+- `src/studyNotes.ts` deve ser revisado para confirmar se o helper está efetivamente utilizado.
+- Existe persistência legada em IndexedDB que ainda não foi migrada nem removida.
 
 ## Decisões permanentes
 
@@ -120,18 +132,16 @@ Uma etapa só deve ser marcada como concluída quando:
 
 ### 2026-09-15
 
-- Integrado o parser robusto ao fluxo `busca → referência → Reader → versículo`.
-- Referências com livros numerados, como `1 João` e `1 Coríntios`, são reconhecidas.
-- Concluída a auditoria das Etapas 4 e 5.
-- Documentados os mecanismos ativo e legado de persistência de Anotações.
-- Documentado e validado o fluxo existente de backup/restauração e importação de versão bíblica.
-- Atualizado o registro operacional para refletir as Etapas 4 e 5 como concluídas.
+- Reconciliado o `PROJECT_STATUS.md` com o estado atual do projeto.
+- Etapa 4 marcada como concluída após auditoria documentada em `docs/ETAPA_4.md`, mantendo explícita a pendência de eventual migração do IndexedDB legado.
+- Etapa 5 marcada como concluída após auditoria documentada em `docs/ETAPA_5.md`.
+- Definida a Etapa 6 como próxima etapa operacional: Progresso de estudo.
+- Mantido o parser de referências já integrado ao fluxo `busca → referência → Reader → versículo`, incluindo livros numerados como `1 João` e `1 Coríntios`.
 
 ### 2026-09-15
 
 - Concluída e integrada a Etapa 3: salvamento de estudos em Anotações.
 - Corrigidos estados acidentais inseridos em telas que não pertenciam à Etapa 3.
-- Atualizado este registro para refletir as Etapas 2 e 3 como concluídas.
 - PR #5 integrada à `main`.
 - Vercel reportou status `success` para o head da implementação.
 
