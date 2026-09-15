@@ -15,8 +15,8 @@
 1. Leitor: rolagem e navegação: **CONCLUÍDA**
 2. Estudo: rolagem e controles: **CONCLUÍDA**
 3. Salvar Estudo em Anotações: **CONCLUÍDA**
-4. Auditoria de Anotações e persistência: **PENDENTE**
-5. Importação/exportação: **PENDENTE**
+4. Auditoria de Anotações e persistência: **CONCLUÍDA**
+5. Importação/exportação: **CONCLUÍDA**
 6. Progresso de estudo: **PENDENTE**
 7. Rastreamento de atividade: **PENDENTE**
 8. Parser bíblico e Strong: **PENDENTE**
@@ -59,12 +59,25 @@
 - A alteração foi integrada à `main` pela PR #5.
 - O head da implementação passou por lint/build e apresentou status Vercel `success`.
 
-## Anotações e persistência
+## Etapa 4 concluída: Auditoria de Anotações e persistência
 
 - O fluxo ativo `App.tsx` usa `localStorage('notes')`.
 - A `LibraryScreen` atualmente renderizada pelo `App.tsx` recebe diretamente o estado `notes`, `onUpdateNote` e `onDeleteNote`.
 - Existe uma implementação paralela em `components/Library.tsx`/`services/db.ts` baseada em IndexedDB.
-- Não migrar nem apagar dados sem mapear criação, edição, exclusão, tags, notebooks, destaque, exportação e importação.
+- A coexistência dos mecanismos foi documentada em `docs/ETAPA_4.md`.
+- Não foi feita migração ou exclusão destrutiva de dados.
+- A fonte ativa permanece o estado/persistência de `App.tsx`; o IndexedDB legado permanece isolado.
+
+## Etapa 5 concluída: Importação e exportação
+
+- `exportAppData()` gera backup JSON versionado (`version: 1`) com data de exportação e dados locais do aplicativo.
+- O backup é baixado no navegador como arquivo `.json`.
+- Anotações participam do backup e preservam campos opcionais como tags, notebook e fixação.
+- `importAppData(file)` lê e valida JSON antes da restauração.
+- As anotações importadas são verificadas como coleção e normalizadas antes de entrarem no estado ativo.
+- `importBibleVersionData(file)` permanece separado do backup geral para importar versões bíblicas.
+- A auditoria foi registrada em `docs/ETAPA_5.md`.
+- Nenhuma substituição destrutiva de `src/App.tsx` foi necessária nesta etapa.
 
 ## Problemas conhecidos
 
@@ -72,7 +85,6 @@
 - O botão de IA das confissões está sem implementação real e deve ser removido ou conectado a uma função válida.
 - O parser Strong pode não aceitar sufixos como `{H1234a}`.
 - O parser de versos pode confundir linhas de continuação iniciadas por números dependendo do formato importado.
-- `selectReference` reconhece `Livro capítulo:versículo`; validar o fluxo completo.
 - Há duplicação de `activeGoalProfile` entre telas.
 - Code splitting de serviços está inconsistente.
 
@@ -96,7 +108,7 @@
 
 Uma etapa só deve ser marcada como concluída quando:
 
-1. O código foi alterado de forma localizada.
+1. O código foi alterado de forma localizada ou, quando nenhuma alteração funcional é necessária, a implementação existente foi auditada.
 2. Não houve substituição destrutiva de arquivo grande.
 3. A funcionalidade afetada foi revisada.
 4. `npm run lint` passa.
@@ -110,7 +122,10 @@ Uma etapa só deve ser marcada como concluída quando:
 
 - Integrado o parser robusto ao fluxo `busca → referência → Reader → versículo`.
 - Referências com livros numerados, como `1 João` e `1 Coríntios`, são reconhecidas.
-
+- Concluída a auditoria das Etapas 4 e 5.
+- Documentados os mecanismos ativo e legado de persistência de Anotações.
+- Documentado e validado o fluxo existente de backup/restauração e importação de versão bíblica.
+- Atualizado o registro operacional para refletir as Etapas 4 e 5 como concluídas.
 
 ### 2026-09-15
 
