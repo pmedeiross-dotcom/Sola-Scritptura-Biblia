@@ -17,7 +17,7 @@
 3. Salvar Estudo em Anotações: **CONCLUÍDA**
 4. Auditoria de Anotações e persistência: **CONCLUÍDA — auditoria realizada; migração IndexedDB/localStorage ainda não executada**
 5. Importação/exportação: **CONCLUÍDA — implementação existente auditada e documentada**
-6. Progresso de estudo: **EM ANDAMENTO — modelo persistente criado; integração com os planos ativos ainda pendente**
+6. Progresso de estudo: **EM ANDAMENTO — integração inicial com a Home concluída; integração com a tela ativa de planos/backup ainda pendente**
 7. Rastreamento de atividade: **PENDENTE**
 8. Parser bíblico e Strong: **PENDENTE**
 9. Confissões/IA: **PENDENTE**
@@ -45,15 +45,18 @@
 - `toggleStudyDay` permite concluir/desmarcar um dia sem duplicação.
 - `getStudyPlanProgress` calcula o percentual somente a partir dos registros reais.
 - A implementação foi integrada à `main` pela PR #8.
+- `HomeScreenV3` agora lê `study-progress-v1` e calcula `progress`/`currentDay` a partir das conclusões reais.
+- A Home passou a oferecer ação explícita `Concluir dia`, persistindo a conclusão e atualizando imediatamente o percentual.
+- Os valores demonstrativos dos três planos estáticos não são mais usados para exibição na Home.
 - Documentação registrada em `docs/ETAPA_6.md`.
 
 ### Próximo trabalho obrigatório
 
-- Integrar o módulo aos planos ativos em `App.tsx`/`HomeScreenV3.tsx`.
-- Criar ação explícita de conclusão do dia.
-- Fazer a Home consumir o progresso persistente em vez dos valores demonstrativos.
-- Incluir o novo estado no backup/restauração.
+- Integrar a mesma fonte de progresso à tela ativa de planos em `App.tsx`.
+- Fazer o fluxo de `Continuar` respeitar o próximo dia não concluído.
+- Incluir `study-progress-v1` no backup/restauração.
 - Validar persistência após fechar/reabrir o aplicativo.
+- Validar que não haja divergência entre Home e tela de planos.
 
 ## Problemas conhecidos
 
@@ -65,7 +68,6 @@
 - Code splitting de serviços está inconsistente.
 - `src/studyNotes.ts` deve ser revisado para confirmar se o helper está efetivamente utilizado.
 - Existe persistência legada em IndexedDB que ainda não foi migrada nem removida.
-- O progresso dos planos estáticos ainda contém valores demonstrativos definidos no código.
 
 ## Decisões permanentes
 
@@ -81,6 +83,7 @@
 
 ### 2026-09-15
 
-- Consolidado o estado da Etapa 6 no `PROJECT_STATUS.md`.
-- Confirmado que `src/studyProgress.ts` já está integrado à `main` pela PR #8.
-- Mantida a etapa como **EM ANDAMENTO** até a integração efetiva com os planos ativos e a Home.
+- Integrado `HomeScreenV3` ao modelo persistente `study-progress-v1`.
+- A Home passou a exibir progresso e próximo dia com base em conclusões reais.
+- Adicionada ação explícita para concluir o próximo dia de cada plano estático.
+- Registrada a alteração neste arquivo.
