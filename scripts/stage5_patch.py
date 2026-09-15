@@ -2,12 +2,38 @@ from pathlib import Path
 
 app = Path('src/App.tsx')
 text = app.read_text(encoding='utf-8')
-start = text.index('  const selectReference = (ref: string) => {')
-end = text.index('\n  };', start) + len('\n  };')
-current = text[start:end]
+old = '''  const selectReference = (ref: string) => {
+  // Basic parser for "Book Chapter:Verse" or "Book Chapter"
+  const parts = ref.trim().split(' ');
+  const chapterPart = parts.pop();
+  const bookName = parts.join(' ');
 
-if 'const normalizedRef = ref.trim().replace(/\\s+/g, \' \');' not in current:
-    replacement = '''  const selectReference = (ref: string) => {
+  const foundBook = BOOKS.find(
+    b => b.name.toLowerCase() === bookName.toLowerCase()
+  );
+
+  if (foundBook) {
+    setBook(foundBook);
+
+    const [chapterText, verseText] = (chapterPart || '1').split(':');
+    const c = parseInt(chapterText || '1', 10);
+    const v = verseText ? parseInt(verseText, 10) : null;
+
+    setChapter(c);
+
+    if (v !== null && !Number.isNaN(v)) {
+      setTargetVerse(String(v));
+      setPendingVerseJump(v);
+    }
+
+    setShowSearch(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    setSearchError(null);
+    setHasSearched(false);
+  }
+};'''
+new = '''  const selectReference = (ref: string) => {
     const normalizedRef = ref.trim().replace(/\\s+/g, ' ');
     if (!normalizedRef) return;
 
@@ -35,7 +61,9 @@ if 'const normalizedRef = ref.trim().replace(/\\s+/g, \' \');' not in current:
     setSearchError(null);
     setHasSearched(false);
   };'''
-    app.write_text(text[:start] + replacement + text[end:], encoding='utf-8')
+if old not in text:
+    raise SystemExit('exact selectReference block not found')
+app.write_text(text.replace(old, new, 1), encoding='utf-8')
 
 status = Path('PROJECT_STATUS.md')
 st = status.read_text(encoding='utf-8')
