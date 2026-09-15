@@ -20,17 +20,18 @@
 6. Progresso de estudo: **CONCLUÍDA**
 7. Rastreamento de atividade: **CONCLUÍDA**
 8. Parser bíblico e Strong: **CONCLUÍDA**
-9. Confissões/IA: **EM ANDAMENTO**
+9. Confissões/IA: **PENDENTE — implementação não aplicada com segurança; fluxo atual continua exibindo a mensagem de funcionalidade removida**
 10. Arquitetura e performance: **PENDENTE**
 11. Qualidade, CI e Vercel: **EM ANDAMENTO**
 12. Evolução visual da Home: **PENDENTE**
 
-## Etapa 9: Confissões/IA — em andamento
+## Etapa 9: Confissões/IA — pendente
 
-- Objetivo: eliminar o estado enganoso do fluxo “Estudar com IA” das Confissões e deixá-lo funcional ou explicitamente indisponível.
-- A implementação deve reutilizar apenas serviços de IA realmente existentes e verificáveis no projeto; não apresentar heurística offline como se fosse uma IA externa.
-- Revisar o fluxo ativo de Confissões, os serviços de IA relacionados, estados de carregamento/erro e persistência da resposta antes do fechamento da etapa.
-- Registrar a decisão final e a validação em `docs/ETAPA_9.md`.
+- O serviço `src/services/internalBibleAI.ts` já fornece análise interna baseada em Bíblia, léxico Strong e conhecimento local do aplicativo.
+- O fluxo ativo de Confissões em `src/App.tsx` ainda contém um handler que retorna apenas a mensagem de que a IA foi removida.
+- Foi preparada uma abordagem para conectar o botão ao mecanismo de estudo interno, mas ela não foi incorporada à produção porque a alteração segura de `src/App.tsx` não pôde ser aplicada/validada nesta execução.
+- Não apresentar heurísticas locais como IA generativa externa continua sendo uma decisão permanente.
+- A etapa só deve ser marcada como concluída após integrar ou remover o botão no fluxo ativo e validar `npm ci`, `npm run lint`, `npm run build` e `npm run check`.
 
 ## Etapa 6: Progresso de estudo — concluída
 
@@ -68,7 +69,7 @@
 
 ## Problemas conhecidos
 
-- Etapa 9 em execução: fluxo “Estudar com IA” das confissões precisa ser finalizado com comportamento honesto e validado.
+- Etapa 9 continua pendente: fluxo “Estudar com IA” das confissões ainda precisa ser finalizado.
 - Há duplicação de `activeGoalProfile` entre telas.
 - Code splitting de serviços está inconsistente.
 - `src/studyNotes.ts` deve ser revisado para confirmar se o helper está efetivamente utilizado.
@@ -90,5 +91,6 @@
 ### 2026-09-15
 
 - Etapas 6, 7 e 8 permanecem concluídas.
-- Etapa 9 iniciada: objetivo e critérios de encerramento registrados antes da implementação.
-- `docs/ETAPA_9.md` será criado/atualizado durante a implementação e validação da etapa.
+- Etapa 9 foi iniciada e auditada.
+- Identificado que o serviço interno de análise já existe, mas o botão ativo das Confissões ainda aponta para um handler sem implementação real.
+- A integração proposta não foi promovida por não haver mecanismo seguro de patch parcial do `App.tsx` nesta execução; o status permanece **PENDENTE** em vez de declarar conclusão falsa.
