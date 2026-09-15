@@ -22,28 +22,29 @@
 8. Parser bíblico e Strong: **CONCLUÍDA**
 9. Confissões/IA: **CONCLUÍDA**
 10. Arquitetura e performance: **CONCLUÍDA**
-11. Qualidade, CI e Vercel: **EM ANDAMENTO**
-12. Evolução visual da Home: **PENDENTE**
+11. Qualidade, CI e Vercel: **CONCLUÍDA**
+12. Evolução visual da Home: **EM ANDAMENTO**
 
-## Etapa 10: Arquitetura e performance — concluída
+## Etapa 11: Qualidade, CI e Vercel — concluída
 
-Objetivo: reduzir concentração em `App.tsx`, revisar componentes legados, melhorar code splitting, eliminar código morto e corrigir pequenos problemas técnicos sem alterar o comportamento funcional estabelecido nas etapas anteriores.
+Validação final realizada sobre o estado consolidado da `main`.
 
-Implementações realizadas:
-- Confirmada a ausência de referências ativas aos componentes legados `components/Library.tsx` e `components/StudyDashboard.tsx`.
-- `components/Library.tsx` removido da `main`.
-- `components/StudyDashboard.tsx` removido da `main`.
-- `src/studyNotes.ts` já havia sido removido após confirmação de ausência de uso ativo.
-- `src/referenceParser.ts` não está presente na arquitetura atual da `main`.
-- `isUselessActivityEvent` permanece centralizada em `src/activityTracking.ts`, sem duplicação ativa em `App.tsx`.
-- `src/services/internalBibleAI.ts` passou a ser carregado sob demanda por import dinâmico.
-- `services/importer.ts` e `services/db.ts` continuam ativos e foram preservados.
-- A alteração de code splitting foi validada pelo CI com instalação de dependências, type check e build concluídos com sucesso.
-- `docs/ETAPA_10.md` registra o resultado da etapa.
+- Commit de referência validado: `53a315edde7b160467dec2cb9ee3aa1b8faed5df`.
+- GitHub Actions `quality`: concluído com sucesso.
+- Instalação de dependências (`npm ci`): sucesso.
+- Type check (`npm run lint`): sucesso.
+- Build (`npm run build`): sucesso.
+- Status do commit na integração GitHub: `Vercel` com estado `success`.
+- Deploy Vercel associado ao commit confirmado pelo status do GitHub.
+- Workflow legado `Home V4 (disabled)` permanece explicitamente desativado e não reescreve código-fonte.
+- Nenhuma falha atual de CI foi identificada na validação da etapa.
+- Nenhuma alteração funcional foi necessária durante a validação final.
 
-## Etapa 11: Qualidade, CI e Vercel — em andamento
+## Etapa 12: Evolução visual da Home — em andamento
 
-Próximo foco: validação final do estado consolidado, revisão dos checks do GitHub Actions, confirmação do build/deploy na Vercel e correção de eventuais falhas ou regressões antes de iniciar a evolução visual da Home.
+Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, clareza das ações principais, continuidade de leitura/estudo e acabamento profissional, preservando as funcionalidades e a estabilidade conquistadas nas etapas anteriores.
+
+Próximo foco: auditar a Home atual, definir a hierarquia de conteúdo e ações prioritárias e implementar a primeira melhoria visual de baixo risco antes de qualquer redesign amplo.
 
 ## Problemas conhecidos / pontos para revisão posterior
 
@@ -66,10 +67,9 @@ Próximo foco: validação final do estado consolidado, revisão dos checks do G
 
 ### 2026-09-15
 
-- Etapas 6, 7, 8 e 9 permanecem concluídas.
-- Componentes legados sem referências ativas removidos.
-- Serviço de estudo interno movido para carregamento sob demanda.
-- Duplicação de `isUselessActivityEvent` eliminada.
-- CI do commit de code splitting concluído com sucesso.
-- Etapa 10 concluída.
-- Etapa 11 iniciada para validação final de qualidade, CI e Vercel.
+- Etapas 6, 7, 8, 9 e 10 permanecem concluídas.
+- CI e build da `main` validados com sucesso.
+- Status Vercel do commit de produção validado como `success`.
+- Workflow legado de Home V4 confirmado como desativado.
+- Etapa 11 concluída sem necessidade de alteração funcional.
+- Etapa 12 iniciada para evolução visual da Home.
