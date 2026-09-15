@@ -17,7 +17,7 @@
 3. Salvar Estudo em Anotações: **CONCLUÍDA**
 4. Auditoria de Anotações e persistência: **CONCLUÍDA — auditoria realizada; migração IndexedDB/localStorage ainda não executada**
 5. Importação/exportação: **CONCLUÍDA — implementação existente auditada e documentada**
-6. Progresso de estudo: **PENDENTE**
+6. Progresso de estudo: **EM ANDAMENTO — auditoria revelou progresso de planos parcialmente calculado e dados de progresso ainda não consolidados em uma fonte persistente única**
 7. Rastreamento de atividade: **PENDENTE**
 8. Parser bíblico e Strong: **PENDENTE**
 9. Confissões/IA: **PENDENTE**
@@ -48,13 +48,13 @@
 - Lint e build foram validados com sucesso.
 - O workflow temporário usado para aplicar a correção foi removido.
 
-## Etapa 3 concluída: Salvar Estudos em Anotações
+## Etapa 3 concluída: Salvar Estudo em Anotações
 
 - `StudyScreen` recebe `onAddNote` da aplicação ativa.
 - O resultado do estudo pode ser salvo diretamente na mesma persistência de Anotações usada pelo fluxo ativo.
 - O registro preserva referência contextual, consulta e resposta.
 - O botão de salvamento só é exibido junto ao resultado do estudo.
-- Após salvar, o botão confirma a operação e impede duplicação imediata do mesmo resultado.
+- Após salvar, o botão confirma a operação e impede duplicação imediata.
 - A implementação foi corrigida para remover estados acidentais inseridos em `BibleScreen` e `ConfessionsScreen`.
 - A alteração foi integrada à `main` pela PR #5.
 - O head da implementação passou por lint/build e apresentou status Vercel `success`.
@@ -79,15 +79,26 @@
 - A auditoria foi registrada em `docs/ETAPA_5.md`.
 - Nenhuma substituição destrutiva de `src/App.tsx` foi necessária nesta etapa.
 
-## Próxima etapa: Progresso de estudo
+## Etapa 6: Progresso de estudo — em andamento
 
-Objetivo: consolidar a experiência de acompanhamento da leitura e estudo.
+### Auditoria realizada
 
-- Mapear os estados de progresso já existentes.
-- Validar persistência e restauração do progresso.
-- Validar planos de leitura e localizações salvas.
-- Consolidar cálculo e apresentação de progresso.
-- Garantir continuidade da leitura a partir da Home.
+- Existem planos estáticos em `READING_PLANS` com valores de `progress` e `currentDay` definidos no código; esses valores não representam, por si só, progresso real do usuário.
+- Existem planos personalizados persistidos em `custom-reading-plans-v1`.
+- O cálculo de plano personalizado usa `getCurrentPlanDay(plan)`, derivando o dia a partir da data de início e da data atual.
+- A interface de planos personalizados calcula `progress` a partir do dia atual e de `estimatedDays`.
+- `reading-locations` é persistido em `localStorage` e permite recuperar o último ponto salvo de leitura.
+- `goal-targets-v1` é persistido em `localStorage` e representa metas, mas não substitui um registro consolidado de capítulos/versículos efetivamente concluídos.
+- A estrutura legada `StudyPlan`/`StudySession` possui `progress`, `completedSessions` e `isCompleted`, mas pertence ao fluxo legado baseado em IndexedDB e não constitui a fonte ativa do progresso.
+
+### Pendências para concluir a etapa
+
+- Definir uma fonte única de verdade para progresso do usuário.
+- Persistir explicitamente sessões/capítulos concluídos, em vez de depender somente da passagem do tempo para planos personalizados.
+- Integrar o progresso real à experiência de continuidade da Home.
+- Evitar que valores demonstrativos dos planos estáticos sejam apresentados como progresso pessoal real.
+- Definir como o progresso será incluído no backup/restauração futuro sem conflitar com o formato já existente.
+- Validar o fluxo completo: iniciar plano → concluir leitura → atualizar progresso → fechar/reabrir app → continuar no ponto correto.
 
 ## Problemas conhecidos
 
@@ -99,6 +110,7 @@ Objetivo: consolidar a experiência de acompanhamento da leitura e estudo.
 - Code splitting de serviços está inconsistente.
 - `src/studyNotes.ts` deve ser revisado para confirmar se o helper está efetivamente utilizado.
 - Existe persistência legada em IndexedDB que ainda não foi migrada nem removida.
+- O progresso dos planos estáticos ainda contém valores demonstrativos definidos no código.
 
 ## Decisões permanentes
 
@@ -108,6 +120,7 @@ Objetivo: consolidar a experiência de acompanhamento da leitura e estudo.
 4. Evitar substituições completas de `src/App.tsx` por operações GitHub Contents.
 5. Priorizar estabilidade funcional antes de novas mudanças visuais.
 6. Preservar dados existentes antes de qualquer migração de persistência.
+7. Não tratar progresso demonstrativo como progresso real do usuário.
 
 ## Limpeza
 
@@ -132,10 +145,16 @@ Uma etapa só deve ser marcada como concluída quando:
 
 ### 2026-09-15
 
+- Iniciada a Etapa 6: Progresso de estudo.
+- Auditados planos estáticos, planos personalizados, localizações de leitura, metas e a estrutura legada de sessões de estudo.
+- Confirmado que o progresso personalizado é atualmente derivado principalmente da data de início, enquanto o progresso dos planos estáticos contém valores definidos no código.
+- Identificada a necessidade de uma fonte persistente única para sessões/capítulos efetivamente concluídos antes de marcar a etapa como concluída.
+
+### 2026-09-15
+
 - Reconciliado o `PROJECT_STATUS.md` com o estado atual do projeto.
 - Etapa 4 marcada como concluída após auditoria documentada em `docs/ETAPA_4.md`, mantendo explícita a pendência de eventual migração do IndexedDB legado.
 - Etapa 5 marcada como concluída após auditoria documentada em `docs/ETAPA_5.md`.
-- Definida a Etapa 6 como próxima etapa operacional: Progresso de estudo.
 - Mantido o parser de referências já integrado ao fluxo `busca → referência → Reader → versículo`, incluindo livros numerados como `1 João` e `1 Coríntios`.
 
 ### 2026-09-15
