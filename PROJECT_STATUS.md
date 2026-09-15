@@ -20,10 +20,17 @@
 6. Progresso de estudo: **CONCLUÍDA**
 7. Rastreamento de atividade: **CONCLUÍDA**
 8. Parser bíblico e Strong: **CONCLUÍDA**
-9. Confissões/IA: **PENDENTE**
+9. Confissões/IA: **EM ANDAMENTO**
 10. Arquitetura e performance: **PENDENTE**
 11. Qualidade, CI e Vercel: **EM ANDAMENTO**
 12. Evolução visual da Home: **PENDENTE**
+
+## Etapa 9: Confissões/IA — em andamento
+
+- Objetivo: eliminar o estado enganoso do fluxo “Estudar com IA” das Confissões e deixá-lo funcional ou explicitamente indisponível.
+- A implementação deve reutilizar apenas serviços de IA realmente existentes e verificáveis no projeto; não apresentar heurística offline como se fosse uma IA externa.
+- Revisar o fluxo ativo de Confissões, os serviços de IA relacionados, estados de carregamento/erro e persistência da resposta antes do fechamento da etapa.
+- Registrar a decisão final e a validação em `docs/ETAPA_9.md`.
 
 ## Etapa 6: Progresso de estudo — concluída
 
@@ -61,7 +68,7 @@
 
 ## Problemas conhecidos
 
-- O botão de IA das confissões está sem implementação real e deve ser removido ou conectado a uma função válida.
+- Etapa 9 em execução: fluxo “Estudar com IA” das confissões precisa ser finalizado com comportamento honesto e validado.
 - Há duplicação de `activeGoalProfile` entre telas.
 - Code splitting de serviços está inconsistente.
 - `src/studyNotes.ts` deve ser revisado para confirmar se o helper está efetivamente utilizado.
@@ -76,13 +83,12 @@
 5. Priorizar estabilidade funcional antes de novas mudanças visuais.
 6. Preservar dados existentes antes de qualquer migração de persistência.
 7. Não tratar progresso demonstrativo como progresso real do usuário.
+8. Não apresentar heurísticas locais como IA real.
 
 ## Registro de alterações
 
 ### 2026-09-15
 
-- Etapa 6 concluída: progresso persistente integrado à Home e à tela ativa de Planos de Leitura, com conclusão explícita e inclusão no backup/restauração.
-- `docs/ETAPA_6.md` atualizado com implementação, validação e limite para planos personalizados.
-- Etapa 7 permanece concluída.
-- Etapa 8 concluída: parser de versículos e reconhecimento de Strong revisados, alinhados e validados com lint/build.
-- `docs/ETAPA_8.md` atualizado com os ajustes e critérios de validação.
+- Etapas 6, 7 e 8 permanecem concluídas.
+- Etapa 9 iniciada: objetivo e critérios de encerramento registrados antes da implementação.
+- `docs/ETAPA_9.md` será criado/atualizado durante a implementação e validação da etapa.
