@@ -20,40 +20,48 @@
 6. Progresso de estudo: **CONCLUÍDA**
 7. Rastreamento de atividade: **CONCLUÍDA**
 8. Parser bíblico e Strong: **CONCLUÍDA**
-9. Confissões/IA: **CONCLUÍDA — estudo interno funcional e transparente; remoção do workflow temporário ainda pendente por bloqueio da ferramenta**
+9. Confissões/IA: **CONCLUÍDA**
 10. Arquitetura e performance: **EM ANDAMENTO**
 11. Qualidade, CI e Vercel: **EM ANDAMENTO**
 12. Evolução visual da Home: **PENDENTE**
 
-## Etapa 9: Confissões/IA — concluída funcionalmente
+## Etapa 9: Confissões/IA — concluída
 
 - O serviço `src/services/internalBibleAI.ts` fornece análise interna baseada em Bíblia, léxico Strong e conhecimento local do aplicativo.
 - O fluxo ativo de Confissões foi conectado ao mecanismo de estudo interno.
-- O botão passou a usar o rótulo `Estudar com recursos internos`.
+- O botão usa o rótulo `Estudar com recursos internos`.
 - A resposta informa explicitamente que a análise é local e não é uma resposta de modelo generativo externo.
 - Estados de carregamento e erro são tratados pelo fluxo ativo.
 - `docs/ETAPA_9.md` registra a implementação e sua limitação conhecida.
-- A remoção do workflow temporário `.github/workflows/stage-9-patch.yml` ainda precisa ser feita manualmente, pois a operação de exclusão foi bloqueada pela ferramenta nesta execução.
+- O workflow temporário `.github/workflows/stage-9-patch.yml` foi removido manualmente da `main`.
 
 ## Etapa 10: Arquitetura e performance — em andamento
 
 Objetivo: reduzir concentração em `App.tsx`, revisar componentes legados, melhorar code splitting, eliminar código morto e corrigir pequenos problemas técnicos sem alterar o comportamento funcional estabelecido nas etapas anteriores.
 
-Prioridades:
-- revisar `src/studyNotes.ts` e `src/referenceParser.ts` quanto a uso real;
-- revisar `isUselessActivityEvent` e outras funções/código morto;
-- revisar duplicação de `activeGoalProfile`;
-- revisar persistência legada em IndexedDB;
-- melhorar code splitting de serviços pesados;
-- reduzir impacto dos chunks grandes do build;
-- corrigir problemas de tipagem identificados, sem migrações destrutivas.
+Auditoria inicial realizada:
+- `src/referenceParser.ts` não está presente na `main`.
+- `src/studyNotes.ts` permanece no repositório e aparenta não possuir uso ativo; deve ser removido somente após confirmação final de referências.
+- `isUselessActivityEvent` possui implementação central em `src/activityTracking.ts` e há uma implementação local duplicada em `src/App.tsx`; deve ser consolidada.
+- `src/studyProgress.ts` já normaliza entradas e calcula dias concluídos por dia único.
+- Há componentes legados fora de `src/components`, incluindo `components/Library.tsx` e `components/StudyDashboard.tsx`; devem ser removidos apenas após confirmação de referências.
+- `services/importer.ts` e `services/db.ts` continuam ativos e não devem ser tratados como código morto.
+- `App.tsx` permanece altamente concentrado; code splitting de serviços e telas é prioridade.
+
+Próximas ações:
+- confirmar referências dos arquivos/componentes candidatos a remoção;
+- consolidar código duplicado sem alterar comportamento;
+- melhorar carregamento sob demanda de serviços/telas pesados;
+- revisar impacto dos chunks grandes do build;
+- corrigir problemas de tipagem de baixo risco;
+- validar com CI antes de avançar para a Etapa 11.
 
 ## Problemas conhecidos
 
-- Workflow temporário `stage-9-patch.yml` ainda presente e deve ser removido.
-- Há duplicação de `activeGoalProfile` entre telas.
-- Code splitting de serviços está inconsistente.
-- `src/studyNotes.ts` e `src/referenceParser.ts` devem ser revisados para confirmar uso efetivo.
+- Há concentração elevada de código em `src/App.tsx`.
+- Code splitting de serviços/telas está inconsistente.
+- `src/studyNotes.ts` aparenta estar sem uso ativo.
+- Há componentes legados fora de `src/components` que precisam de auditoria antes de remoção.
 - Existe persistência legada em IndexedDB que ainda não foi migrada nem removida.
 - O build apresenta avisos de tamanho de chunks.
 
@@ -72,8 +80,7 @@ Prioridades:
 
 ### 2026-09-15
 
-- Etapas 6, 7 e 8 permanecem concluídas.
-- Etapa 9 concluída funcionalmente: fluxo de estudo das Confissões conectado aos recursos internos de análise, sem apresentar heurística local como IA generativa externa.
-- `docs/ETAPA_9.md` criado.
-- O workflow temporário da Etapa 9 permanece como pendência operacional porque a exclusão via ferramenta foi bloqueada.
-- Etapa 10 iniciada: arquitetura, código morto, persistência legada, code splitting e tamanho dos bundles passam a ser o foco.
+- Etapas 6, 7, 8 e 9 permanecem concluídas.
+- Workflow temporário da Etapa 9 removido manualmente da `main`.
+- Etapa 10 permanece em andamento.
+- Auditoria inicial de código morto, componentes legados, persistência e concentração de `App.tsx` registrada.
