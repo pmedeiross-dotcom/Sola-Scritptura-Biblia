@@ -19,7 +19,7 @@
 5. Importação/exportação: **CONCLUÍDA — implementação existente auditada e documentada**
 6. Progresso de estudo: **CONCLUÍDA**
 7. Rastreamento de atividade: **CONCLUÍDA**
-8. Parser bíblico e Strong: **PENDENTE**
+8. Parser bíblico e Strong: **CONCLUÍDA**
 9. Confissões/IA: **PENDENTE**
 10. Arquitetura e performance: **PENDENTE**
 11. Qualidade, CI e Vercel: **EM ANDAMENTO**
@@ -50,11 +50,18 @@
 - `docs/ETAPA_7.md` registra a implementação final.
 - Lint/build/check foram executados com sucesso no workflow da etapa.
 
+## Etapa 8: Parser bíblico e Strong — concluída
+
+- Marcadores Strong reconhecem `{H1234}`, `{H1234a}`, `{G3056}` e variantes equivalentes com sufixo alfabético.
+- A exibição e a ocultação dos marcadores Strong usam a mesma regra de reconhecimento.
+- O parser do Reader identifica um novo versículo quando o número é sequencial ao anterior, evitando interpretar uma continuação numérica como novo versículo.
+- `src/services/bibleService.ts` usa a mesma regra estrutural para manter o comportamento consistente.
+- O texto importado é preservado; a alteração atua na identificação estrutural dos versículos e marcadores.
+- `docs/ETAPA_8.md` registra a implementação e a validação executada.
+
 ## Problemas conhecidos
 
 - O botão de IA das confissões está sem implementação real e deve ser removido ou conectado a uma função válida.
-- O parser Strong pode não aceitar sufixos como `{H1234a}`.
-- O parser de versos pode confundir linhas de continuação iniciadas por números dependendo do formato importado.
 - Há duplicação de `activeGoalProfile` entre telas.
 - Code splitting de serviços está inconsistente.
 - `src/studyNotes.ts` deve ser revisado para confirmar se o helper está efetivamente utilizado.
@@ -77,3 +84,5 @@
 - Etapa 6 concluída: progresso persistente integrado à Home e à tela ativa de Planos de Leitura, com conclusão explícita e inclusão no backup/restauração.
 - `docs/ETAPA_6.md` atualizado com implementação, validação e limite para planos personalizados.
 - Etapa 7 permanece concluída.
+- Etapa 8 concluída: parser de versículos e reconhecimento de Strong revisados, alinhados e validados com lint/build.
+- `docs/ETAPA_8.md` atualizado com os ajustes e critérios de validação.
