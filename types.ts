@@ -75,6 +75,9 @@ export interface Note {
   content: string;
   reference: string;
   createdAt: number;
+  tags?: string[];
+  notebook?: string;
+  pinned?: boolean;
 }
 
 export interface Highlight {
