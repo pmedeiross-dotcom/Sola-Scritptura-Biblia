@@ -1148,7 +1148,6 @@ const BibleScreen = ({
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [scrollButtonsActive, setScrollButtonsActive] = useState(true);
-  const [studySaved, setStudySaved] = useState(false);
   const [navHistory, setNavHistory] = useState<Array<{ bookName: string; chapter: number }>>([
     { bookName: BOOKS[0].name, chapter: 1 }
   ]);
@@ -3238,7 +3237,6 @@ const ConfessionsScreen = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [scrollButtonsActive, setScrollButtonsActive] = useState(true);
-  const [studySaved, setStudySaved] = useState(false);
   const contentScrollRef = useRef<HTMLDivElement | null>(null);
   const scrollButtonsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
