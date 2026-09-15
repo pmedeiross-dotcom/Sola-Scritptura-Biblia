@@ -52,12 +52,16 @@ Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, c
 - Foram incluídos comportamentos responsivos para desktop, tablet e mobile, além de estados visuais para tema escuro.
 - A implementação preserva a lógica existente de navegação, progresso dos planos, compartilhamento do versículo e retomada da leitura.
 - Foi refinado o bloco de continuidade da leitura para assumir maior protagonismo visual, com destaque lateral, contraste, espaçamento e botão de ação mais evidente.
-- A alteração foi exclusivamente visual; nenhuma lógica de navegação ou persistência foi modificada.
+- As ações rápidas foram refinadas visualmente: “Ler Bíblia” e “Estudar” receberam maior peso como ações primárias, enquanto “Pesquisar” e “Anotações” permanecem acessíveis com menor competição visual.
+- A grade de recursos foi compactada visualmente para funcionar como navegação secundária, preservando os oito atalhos existentes.
+- A experiência mobile recebeu ajustes específicos de altura e proporção dos cartões, sem alterar a lógica de navegação.
+- A alteração permaneceu exclusivamente visual; nenhuma lógica de navegação, progresso ou persistência foi modificada.
 - Commit da primeira camada visual: `4de77862f238813ec6da760c0575d51b9a1ca58c`.
-- Commit do refinamento de hierarquia: `cc500ca4d1a6f9ce31b92a8d5dcab0b407472977`.
-- PR #15 foi incorporada à `main` no commit `c10570e713a93be4f9d30f971cc0ae229840e2f4`.
+- Refinamento anterior da hierarquia: `cc500ca4d1a6f9ce31b92a8d5dcab0b407472977`.
+- Refinamento de ações rápidas em validação: `769fc6f1b296efdbd06c3679f7f7bdf00d91c173`.
+- Vercel do commit de validação: `success`.
 
-Próximo foco: refinar a hierarquia da Home nos blocos de acesso rápido e recursos, reduzir competição visual entre ações secundárias e validar a experiência em larguras móveis sem alterar a lógica funcional.
+Próximo foco: revisar o bloco de recursos e a composição geral da Home em larguras móveis, buscando reduzir densidade e melhorar legibilidade sem alterar a lógica funcional.
 
 ## Problemas conhecidos / pontos para revisão posterior
 
@@ -85,4 +89,4 @@ Próximo foco: refinar a hierarquia da Home nos blocos de acesso rápido e recur
 - Status Vercel do commit de produção validado como `success`.
 - Workflow legado de Home V4 confirmado como desativado.
 - Etapa 11 concluída sem necessidade de alteração funcional.
-- Etapa 12 segue em andamento com a primeira camada visual e o refinamento da hierarquia já registrados.
+- Etapa 12 segue em andamento com a primeira camada visual, o refinamento da hierarquia e a diferenciação das ações rápidas já registrados.
