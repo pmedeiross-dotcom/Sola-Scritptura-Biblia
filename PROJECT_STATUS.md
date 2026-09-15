@@ -58,10 +58,10 @@ Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, c
 - A alteração permaneceu exclusivamente visual; nenhuma lógica de navegação, progresso ou persistência foi modificada.
 - Commit da primeira camada visual: `4de77862f238813ec6da760c0575d51b9a1ca58c`.
 - Refinamento anterior da hierarquia: `cc500ca4d1a6f9ce31b92a8d5dcab0b407472977`.
-- Refinamento de ações rápidas em validação: `769fc6f1b296efdbd06c3679f7f7bdf00d91c173`.
-- Vercel do commit de validação: `success`.
+- Refinamento de ações rápidas: PR #16, merge commit `8ec1e52749ab5956d84ce060618986d7f52aed38`.
+- Vercel do commit de validação das ações rápidas: `success`.
 
-Próximo foco: revisar o bloco de recursos e a composição geral da Home em larguras móveis, buscando reduzir densidade e melhorar legibilidade sem alterar a lógica funcional.
+Próximo foco: revisão visual final da composição da Home em larguras móveis, com atenção a densidade, legibilidade, espaçamento, tema escuro e equilíbrio entre continuidade, ações rápidas, recursos e planos, sem alterar a lógica funcional.
 
 ## Problemas conhecidos / pontos para revisão posterior
 
@@ -90,3 +90,4 @@ Próximo foco: revisar o bloco de recursos e a composição geral da Home em lar
 - Workflow legado de Home V4 confirmado como desativado.
 - Etapa 11 concluída sem necessidade de alteração funcional.
 - Etapa 12 segue em andamento com a primeira camada visual, o refinamento da hierarquia e a diferenciação das ações rápidas já registrados.
+- PR #16 foi integrado à `main`, consolidando o refinamento visual das ações rápidas, recursos e comportamento mobile.
