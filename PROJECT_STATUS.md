@@ -41,7 +41,7 @@ Objetivo: reduzir concentração em `App.tsx`, revisar componentes legados, melh
 
 Auditoria inicial realizada:
 - `src/referenceParser.ts` não está presente na `main`.
-- `src/studyNotes.ts` permanece no repositório e aparenta não possuir uso ativo; deve ser removido somente após confirmação final de referências.
+- `src/studyNotes.ts` foi removido após confirmação de ausência de uso ativo.
 - `isUselessActivityEvent` possui implementação central em `src/activityTracking.ts` e há uma implementação local duplicada em `src/App.tsx`; deve ser consolidada.
 - `src/studyProgress.ts` já normaliza entradas e calcula dias concluídos por dia único.
 - Há componentes legados fora de `src/components`, incluindo `components/Library.tsx` e `components/StudyDashboard.tsx`; devem ser removidos apenas após confirmação de referências.
@@ -60,7 +60,7 @@ Próximas ações:
 
 - Há concentração elevada de código em `src/App.tsx`.
 - Code splitting de serviços/telas está inconsistente.
-- `src/studyNotes.ts` aparenta estar sem uso ativo.
+- Há uma função duplicada de filtragem de atividade em `App.tsx`.
 - Há componentes legados fora de `src/components` que precisam de auditoria antes de remoção.
 - Existe persistência legada em IndexedDB que ainda não foi migrada nem removida.
 - O build apresenta avisos de tamanho de chunks.
@@ -82,5 +82,7 @@ Próximas ações:
 
 - Etapas 6, 7, 8 e 9 permanecem concluídas.
 - Workflow temporário da Etapa 9 removido manualmente da `main`.
+- `src/studyNotes.ts` removido por estar sem uso ativo.
+- `src/studyProgress.ts` endurecido contra entradas duplicadas e inválidas.
 - Etapa 10 permanece em andamento.
 - Auditoria inicial de código morto, componentes legados, persistência e concentração de `App.tsx` registrada.
