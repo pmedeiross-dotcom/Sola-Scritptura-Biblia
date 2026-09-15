@@ -13,8 +13,8 @@
 ## Etapas do plano
 
 1. Leitor: rolagem e navegação: **CONCLUÍDA**
-2. Estudo: rolagem e controles: **PENDENTE**
-3. Salvar Estudo em Anotações: **PENDENTE**
+2. Estudo: rolagem e controles: **CONCLUÍDA**
+3. Salvar Estudo em Anotações: **CONCLUÍDA**
 4. Auditoria de Anotações e persistência: **PENDENTE**
 5. Importação/exportação: **PENDENTE**
 6. Progresso de estudo: **PENDENTE**
@@ -22,7 +22,7 @@
 8. Parser bíblico e Strong: **PENDENTE**
 9. Confissões/IA: **PENDENTE**
 10. Arquitetura e performance: **PENDENTE**
-11. Qualidade, CI e Vercel: **PENDENTE**
+11. Qualidade, CI e Vercel: **EM ANDAMENTO**
 12. Evolução visual da Home: **PENDENTE**
 
 ## Etapa 1 concluída: Leitor bíblico
@@ -36,23 +36,28 @@
 - `verseContainerRef` permanece para localizar elementos dos versículos, não para controlar a rolagem.
 - `goToVerse` continua usando `data-verse-number` e `scrollIntoView`.
 - `activeCommentaryKey` e `saveCurrentLocation` priorizam `currentVisibleVerse` quando disponível.
-- A estrutura foi validada pelo CI estável no commit `15d8fdd99adf03b481bbee6306ca37f5aa67ebad`; o workflow CI concluiu com sucesso, executando instalação, lint e build.
+- A estrutura foi validada pelo CI estável no commit `15d8fdd99adf03b481bbee6306ca37f5aa67ebad`.
 - Não foi feita substituição destrutiva de `src/App.tsx`.
 
-## Próxima etapa
-
-### Etapa 2 - Estudo: rolagem e controles
-
-Objetivo: estabilizar a rolagem da tela ativa `StudyScreen`, evitando conflito entre o `main` externo do `App.tsx` e o contêiner interno de estudo, e validar os controles de topo/fim.
-
-## Estado atual do Estudo
+## Etapa 2 concluída: Estudo - rolagem e controles
 
 - A tela ativa é `StudyScreen` dentro de `src/App.tsx`.
-- `components/StudyDashboard.tsx` é uma implementação paralela e não deve ser confundida com a tela ativa.
-- Atualmente existem potencialmente dois contêineres roláveis: o `<main>` externo do `App.tsx` e o root do `StudyScreen`.
-- `studyScrollRef` existe e os botões de topo/fim já possuem lógica, mas a arquitetura de rolagem ainda precisa ser consolidada e validada.
-- As preferências de estudo continuam persistidas em `localStorage('study-analysis-preferences')`.
-- Não considerar a funcionalidade de salvar estudo em Anotações como concluída até verificar o código ativo em `App.tsx`.
+- `studyScrollRef` é o contêiner principal de rolagem da tela de Estudo.
+- O `<main>` externo do `App.tsx` fica com `overflow-hidden` quando `screen === 'study'`, evitando rolagem aninhada.
+- Os controles de topo e fim usam o mesmo contêiner `studyScrollRef`.
+- Lint e build foram validados com sucesso.
+- O workflow temporário usado para aplicar a correção foi removido.
+
+## Etapa 3 concluída: Salvar Estudos em Anotações
+
+- `StudyScreen` recebe `onAddNote` da aplicação ativa.
+- O resultado do estudo pode ser salvo diretamente na mesma persistência de Anotações usada pelo fluxo ativo.
+- O registro preserva referência contextual, consulta e resposta.
+- O botão de salvamento só é exibido junto ao resultado do estudo.
+- Após salvar, o botão confirma a operação e impede duplicação imediata do mesmo resultado.
+- A implementação foi corrigida para remover estados acidentais inseridos em `BibleScreen` e `ConfessionsScreen`.
+- A alteração foi integrada à `main` pela PR #5.
+- O head da implementação passou por lint/build e apresentou status Vercel `success`.
 
 ## Anotações e persistência
 
@@ -85,7 +90,7 @@ Objetivo: estabilizar a rolagem da tela ativa `StudyScreen`, evitando conflito e
 - `.github/workflows/apply-home-v4.yml` foi desativado.
 - A Home V4 não é a implementação ativa.
 - O workflow temporário de correção do leitor foi removido após a aplicação da correção.
-- O workflow temporário usado em tentativas de correção do Estudo não deve ser tratado como arquitetura permanente.
+- O workflow temporário usado nas correções do Estudo foi removido após a aplicação das alterações.
 
 ## Critério de conclusão de cada etapa
 
@@ -98,3 +103,18 @@ Uma etapa só deve ser marcada como concluída quando:
 5. `npm run build` passa.
 6. Quando aplicável, `npm run check` passa.
 7. O resultado foi registrado neste arquivo.
+
+## Registro de alterações
+
+### 2026-09-15
+
+- Concluída e integrada a Etapa 3: salvamento de estudos em Anotações.
+- Corrigidos estados acidentais inseridos em telas que não pertenciam à Etapa 3.
+- Atualizado este registro para refletir as Etapas 2 e 3 como concluídas.
+- PR #5 integrada à `main`.
+- Vercel reportou status `success` para o head da implementação.
+
+### 2026-09-14
+
+- Corrigida a rolagem da tela de Estudo para evitar contêineres aninhados.
+- Removida a automação temporária anterior de GitHub Actions.
