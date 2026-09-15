@@ -21,49 +21,35 @@
 7. Rastreamento de atividade: **CONCLUÍDA**
 8. Parser bíblico e Strong: **CONCLUÍDA**
 9. Confissões/IA: **CONCLUÍDA**
-10. Arquitetura e performance: **EM ANDAMENTO**
+10. Arquitetura e performance: **CONCLUÍDA**
 11. Qualidade, CI e Vercel: **EM ANDAMENTO**
 12. Evolução visual da Home: **PENDENTE**
 
-## Etapa 9: Confissões/IA — concluída
-
-- O serviço `src/services/internalBibleAI.ts` fornece análise interna baseada em Bíblia, léxico Strong e conhecimento local do aplicativo.
-- O fluxo ativo de Confissões foi conectado ao mecanismo de estudo interno.
-- O botão usa o rótulo `Estudar com recursos internos`.
-- A resposta informa explicitamente que a análise é local e não é uma resposta de modelo generativo externo.
-- Estados de carregamento e erro são tratados pelo fluxo ativo.
-- `docs/ETAPA_9.md` registra a implementação e sua limitação conhecida.
-- O workflow temporário `.github/workflows/stage-9-patch.yml` foi removido manualmente da `main`.
-
-## Etapa 10: Arquitetura e performance — em andamento
+## Etapa 10: Arquitetura e performance — concluída
 
 Objetivo: reduzir concentração em `App.tsx`, revisar componentes legados, melhorar code splitting, eliminar código morto e corrigir pequenos problemas técnicos sem alterar o comportamento funcional estabelecido nas etapas anteriores.
 
-Auditoria inicial realizada:
-- `src/referenceParser.ts` não está presente na `main`.
-- `src/studyNotes.ts` foi removido após confirmação de ausência de uso ativo.
-- `isUselessActivityEvent` possui implementação central em `src/activityTracking.ts` e há uma implementação local duplicada em `src/App.tsx`; deve ser consolidada.
-- `src/studyProgress.ts` já normaliza entradas e calcula dias concluídos por dia único.
-- Há componentes legados fora de `src/components`, incluindo `components/Library.tsx` e `components/StudyDashboard.tsx`; devem ser removidos apenas após confirmação de referências.
-- `services/importer.ts` e `services/db.ts` continuam ativos e não devem ser tratados como código morto.
-- `App.tsx` permanece altamente concentrado; code splitting de serviços e telas é prioridade.
+Implementações realizadas:
+- Confirmada a ausência de referências ativas aos componentes legados `components/Library.tsx` e `components/StudyDashboard.tsx`.
+- `components/Library.tsx` removido da `main`.
+- `components/StudyDashboard.tsx` removido da `main`.
+- `src/studyNotes.ts` já havia sido removido após confirmação de ausência de uso ativo.
+- `src/referenceParser.ts` não está presente na arquitetura atual da `main`.
+- `isUselessActivityEvent` permanece centralizada em `src/activityTracking.ts`, sem duplicação ativa em `App.tsx`.
+- `src/services/internalBibleAI.ts` passou a ser carregado sob demanda por import dinâmico.
+- `services/importer.ts` e `services/db.ts` continuam ativos e foram preservados.
+- A alteração de code splitting foi validada pelo CI com instalação de dependências, type check e build concluídos com sucesso.
+- `docs/ETAPA_10.md` registra o resultado da etapa.
 
-Próximas ações:
-- confirmar referências dos arquivos/componentes candidatos a remoção;
-- consolidar código duplicado sem alterar comportamento;
-- melhorar carregamento sob demanda de serviços/telas pesados;
-- revisar impacto dos chunks grandes do build;
-- corrigir problemas de tipagem de baixo risco;
-- validar com CI antes de avançar para a Etapa 11.
+## Etapa 11: Qualidade, CI e Vercel — em andamento
 
-## Problemas conhecidos
+Próximo foco: validação final do estado consolidado, revisão dos checks do GitHub Actions, confirmação do build/deploy na Vercel e correção de eventuais falhas ou regressões antes de iniciar a evolução visual da Home.
 
-- Há concentração elevada de código em `src/App.tsx`.
-- Code splitting de serviços/telas está inconsistente.
-- Há uma função duplicada de filtragem de atividade em `App.tsx`.
-- Há componentes legados fora de `src/components` que precisam de auditoria antes de remoção.
-- Existe persistência legada em IndexedDB que ainda não foi migrada nem removida.
-- O build apresenta avisos de tamanho de chunks.
+## Problemas conhecidos / pontos para revisão posterior
+
+- `App.tsx` continua altamente concentrado; uma decomposição maior deve ser feita somente com testes e baixo risco.
+- `services/db.ts` mantém persistência em IndexedDB por ainda possuir uso ativo.
+- O build pode continuar apresentando avisos de tamanho de chunks; a melhoria feita na Etapa 10 reduz um dos pontos de carregamento inicial, mas não constitui uma refatoração integral de `App.tsx`.
 
 ## Decisões permanentes
 
@@ -81,8 +67,9 @@ Próximas ações:
 ### 2026-09-15
 
 - Etapas 6, 7, 8 e 9 permanecem concluídas.
-- Workflow temporário da Etapa 9 removido manualmente da `main`.
-- `src/studyNotes.ts` removido por estar sem uso ativo.
-- `src/studyProgress.ts` endurecido contra entradas duplicadas e inválidas.
-- Etapa 10 permanece em andamento.
-- Auditoria inicial de código morto, componentes legados, persistência e concentração de `App.tsx` registrada.
+- Componentes legados sem referências ativas removidos.
+- Serviço de estudo interno movido para carregamento sob demanda.
+- Duplicação de `isUselessActivityEvent` eliminada.
+- CI do commit de code splitting concluído com sucesso.
+- Etapa 10 concluída.
+- Etapa 11 iniciada para validação final de qualidade, CI e Vercel.
