@@ -1223,10 +1223,18 @@ const BibleScreen = ({
     let current: { number: number; text: string } | null = null;
 
     for (const line of lines) {
-      const match = line.match(/^(\d+)[\.:]?\s+(.+)$/);
-      if (match) {
+      const match = line.match(/^(\d{1,3})(?:[\.:]\s+|\s+)(.+)$/);
+      const candidateNumber = match ? Number(match[1]) : null;
+      const isVerseStart = Boolean(
+        match &&
+        Number.isInteger(candidateNumber) &&
+        candidateNumber > 0 &&
+        (!current || candidateNumber === current.number + 1)
+      );
+
+      if (match && isVerseStart) {
         if (current) parsed.push(current);
-        current = { number: parseInt(match[1], 10), text: match[2].trim() };
+        current = { number: candidateNumber as number, text: match[2].trim() };
       } else if (current) {
         current.text += ` ${line}`;
       }
@@ -1267,12 +1275,12 @@ const BibleScreen = ({
 
   const renderVerseTextWithStrong = (text: string) => {
     if (!showStrongNumbers) {
-      return text.replace(/\{[HG]\d+\}/gi, '').replace(/\s{2,}/g, ' ').trim();
+      return text.replace(/\{[HG]\d+[a-z]?\}/gi, '').replace(/\s{2,}/g, ' ').trim();
     }
 
-    const parts = text.split(/(\{[HG]\d+\})/gi).filter(Boolean);
+    const parts = text.split(/(\{[HG]\d+[a-z]?\})/gi).filter(Boolean);
     return parts.map((part, index) => {
-      const strongMatch = part.match(/^\{([HG]\d+)\}$/i);
+      const strongMatch = part.match(/^\{([HG]\d+[a-z]?)\}$/i);
       if (strongMatch) {
         return (
           <sup

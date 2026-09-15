@@ -280,11 +280,24 @@ const parseVerseLines = (value: string) => {
     .split('\n')
     .map(line => line.trim())
     .filter(Boolean)
-    .map(line => {
-      const match = line.match(/^(\d+)[\.:]?\s+(.+)$/);
-      return match ? { verse: parseInt(match[1], 10), text: match[2].trim() } : null;
-    })
-    .filter((item): item is { verse: number; text: string } => item !== null);
+    .reduce<Array<{ verse: number; text: string }>>((parsed, line) => {
+      const match = line.match(/^(\d{1,3})(?:[\.:]\s+|\s+)(.+)$/);
+      const candidate = match ? Number(match[1]) : null;
+      const current = parsed[parsed.length - 1];
+      const isVerseStart = Boolean(
+        match &&
+        Number.isInteger(candidate) &&
+        candidate > 0 &&
+        (!current || candidate === current.verse + 1)
+      );
+
+      if (match && isVerseStart) {
+        parsed.push({ verse: candidate as number, text: match[2].trim() });
+      } else if (current) {
+        current.text += ` ${line}`;
+      }
+      return parsed;
+    }, []);
 };
 
 const resolveReferenceText = async (reference: string) => {
