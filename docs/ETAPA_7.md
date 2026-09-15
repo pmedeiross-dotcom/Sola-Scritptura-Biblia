@@ -4,20 +4,26 @@
 
 Estabelecer rastreamento local de atividades úteis do usuário, com limite de retenção e validação defensiva, sem registrar dados desnecessários.
 
-## Implementação inicial
+## Implementação concluída
 
-- Criado `src/activityTracking.ts`.
-- Persistência em `localStorage` com a chave `activity-events-v1`.
+- `src/activityTracking.ts` é usado pelo fluxo ativo de `App.tsx`.
+- Persistência local em `activity-events-v1`.
 - Limite de retenção: 200 eventos.
-- Eventos possuem `id`, `type`, `label` e `timestamp`.
-- Leitura tolera JSON inválido e descarta registros incompatíveis.
-- Eventos vazios e o evento considerado inútil `screen_view / Tela: Library` são ignorados.
-- `appendActivityEvent` centraliza a inclusão e a persistência.
+- Cada evento possui `id`, `type`, `label` e `timestamp`.
+- Leitura defensiva descarta JSON inválido e registros incompatíveis.
+- Eventos vazios são ignorados.
+- O evento `screen_view / Tela: Library` continua sendo filtrado pelo módulo central.
+- `appendActivityEvent` centraliza validação, filtragem, retenção e persistência.
+- O rastreamento está habilitado no fluxo ativo.
+- `App.tsx` inicializa o estado a partir do armazenamento persistido, sem apagar eventos na montagem.
+- Os pontos de rastreamento existentes para notas, planos, importações, metas e onboarding continuam utilizando `trackActivity`.
+- Exportação/importação de backup já inclui `activityEvents`.
+- Limpeza manual de atividade continua disponível e remove o armazenamento persistido.
 
-## Pendências
+## Validação
 
-- Integrar o módulo ao fluxo ativo de `App.tsx`.
-- Remover a limpeza automática que apaga `activity-events-v1` a cada montagem, caso ainda esteja presente.
-- Revisar os pontos de chamada para registrar somente ações úteis.
-- Validar que a atividade não interfira no desempenho nem na privacidade local.
-- Executar lint/build/check antes de marcar a etapa como concluída.
+A alteração foi validada no workflow da etapa com `npm ci`, `npm run lint`, `npm run build` e `npm run check`, todos concluídos sem erro. O build mantém apenas os avisos existentes de chunks grandes.
+
+## Resultado
+
+**Etapa 7 concluída.** O rastreamento persistente está integrado ao fluxo ativo sem limpeza automática e com retenção/filtragem centralizadas.
