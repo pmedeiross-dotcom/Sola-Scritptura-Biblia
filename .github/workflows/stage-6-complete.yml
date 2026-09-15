@@ -23,75 +23,62 @@ jobs:
           from pathlib import Path
           p = Path('src/App.tsx')
           s = p.read_text()
-
           imp = "import { appendActivityEvent, readActivityEvents } from './activityTracking';"
           if "from './studyProgress'" not in s:
-              if imp not in s: raise SystemExit('activity import marker not found')
               s = s.replace(imp, imp + "\nimport { getStudyPlanProgress, readStudyProgress, toggleStudyDay, writeStudyProgress } from './studyProgress';", 1)
-
           state = "const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>(() => readActivityEvents());"
           if "const [studyProgress, setStudyProgress]" not in s:
-              if state not in s: raise SystemExit('activity state marker not found')
               s = s.replace(state, state + "\n  const [studyProgress, setStudyProgress] = useState(() => readStudyProgress());", 1)
-
           track = "  const trackActivity = (type: string, label: string) => {\n    if (!ENABLE_ACTIVITY_TRACKING) return;\n    setActivityEvents(prev => appendActivityEvent(prev, type, label));\n  };"
           if "const toggleReadingPlanDay" not in s:
-              if track not in s: raise SystemExit('track marker not found')
               s = s.replace(track, track + "\n\n  const toggleReadingPlanDay = (planId: string, day: number) => {\n    setStudyProgress(prev => {\n      const next = toggleStudyDay(prev, planId, day);\n      writeStudyProgress(next);\n      return next;\n    });\n  };", 1)
-
           ex = "activityEvents: localStorage.getItem('activity-events-v1') || '[]',"
           if "studyProgress: localStorage.getItem('study-progress-v1')" not in s:
-              if ex not in s: raise SystemExit('export marker not found')
               s = s.replace(ex, ex + "\n      studyProgress: localStorage.getItem('study-progress-v1') || JSON.stringify(readStudyProgress()),", 1)
-
           im = "if (typeof parsed.data.activityEvents === 'string') localStorage.setItem('activity-events-v1', parsed.data.activityEvents);"
           if "parsed.data.studyProgress" not in s:
-              if im not in s: raise SystemExit('import marker not found')
               s = s.replace(im, im + "\n      if (typeof parsed.data.studyProgress === 'string') {\n        localStorage.setItem('study-progress-v1', parsed.data.studyProgress);\n        setStudyProgress(readStudyProgress());\n      }", 1)
+          type_marker = "activityEvents?: string;"
+          if "studyProgress?: string;" not in s:
+              s = s.replace(type_marker, type_marker + "\n        studyProgress?: string;", 1)
 
           rp_start = s.find('const ReadingPlansScreen = (')
           if rp_start < 0: raise SystemExit('ReadingPlansScreen not found')
           rp_end = s.find('\nconst ', rp_start + 10)
           if rp_end < 0: rp_end = len(s)
           region = s[rp_start:rp_end]
-
+          destruct_marker = "const ReadingPlansScreen = ({\n  onBack,\n  onOpenPlan,\n  onOpenBibleTarget,"
+          if "  studyProgress,\n  onToggleDay," not in region:
+              if destruct_marker not in region: raise SystemExit('plans destructuring marker not found')
+              region = region.replace(destruct_marker, destruct_marker + "\n  studyProgress,\n  onToggleDay,", 1)
           props_marker = "  onOpenBibleTarget: (target: PlanReferenceTarget, eventLabel: string) => void;"
           if 'studyProgress: ReturnType<typeof readStudyProgress>;' not in region:
               if props_marker not in region: raise SystemExit('plans prop type marker not found')
               region = region.replace(props_marker, props_marker + "\n  studyProgress: ReturnType<typeof readStudyProgress>;\n  onToggleDay: (planId: string, day: number) => void;", 1)
-
           calc_marker = "  const [generatedPlan, setGeneratedPlan] = useState<{ title: string, days: { day: number, reference: string, focus: string }[] } | null>(null);"
           if "const getActivePlan" not in region:
               if calc_marker not in region: raise SystemExit('generated plan marker not found')
               region = region.replace(calc_marker, calc_marker + "\n  const getActivePlan = (plan: ReadingPlan) => {\n    const progress = getStudyPlanProgress(studyProgress, plan.id, plan.days);\n    return { ...plan, progress: progress.progress, currentDay: Math.min(progress.completedDays + 1, plan.days) };\n  };", 1)
-
-          # Make the active static-plan cards display persisted progress and use the persisted next day.
           region = region.replace('plan.progress', 'getStudyPlanProgress(studyProgress, plan.id, plan.days).progress')
           region = region.replace('plan.currentDay', 'getStudyPlanProgress(studyProgress, plan.id, plan.days).completedDays + 1')
           region = region.replace('onClick={() => onOpenPlan(plan)}', 'onClick={() => onOpenPlan(getActivePlan(plan))}')
-
-          # Add explicit completion toggle after the Continue button, once.
           continue_block = "              Continuar Leitura\n            </button>"
           if "onToggleDay(plan.id" not in region:
               if continue_block not in region: raise SystemExit('continue button marker not found')
               button = continue_block + "\n            <button type=\"button\" onClick={() => onToggleDay(plan.id, Math.min(getStudyPlanProgress(studyProgress, plan.id, plan.days).completedDays + 1, plan.days))} className=\"w-full mt-2 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-sm font-semibold transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-950/30\">\n              {getStudyPlanProgress(studyProgress, plan.id, plan.days).completedDays >= plan.days ? 'Plano concluído' : `Concluir dia ${Math.min(getStudyPlanProgress(studyProgress, plan.id, plan.days).completedDays + 1, plan.days)}`}\n            </button>"
               region = region.replace(continue_block, button, 1)
-
           s = s[:rp_start] + region + s[rp_end:]
 
-          # Active plans screen receives the persistent state and toggle callback.
-          active_marker = "            onNavigate={setScreen}\n            onOpenPlan={openPlanInBible}"
-          if "onToggleDay={toggleReadingPlanDay}" not in s:
-              if active_marker not in s: raise SystemExit('active plans render marker not found')
-              s = s.replace(active_marker, active_marker + "\n            studyProgress={studyProgress}\n            onToggleDay={toggleReadingPlanDay}", 1)
-
-          # Home's Continue action also resolves the next uncompleted day.
+          # Remove accidental props from HomeScreenV3 if present.
+          s = s.replace("<HomeScreenV3 onNavigate={setScreen} onOpenPlan={openPlanInBible} studyProgress={studyProgress} onToggleDay={toggleReadingPlanDay} />", "<HomeScreenV3 onNavigate={setScreen} onOpenPlan={openPlanInBible} />")
+          case_marker = "case 'reading-plans': return <ReadingPlansScreen onBack={() => setScreen('home')} onOpenPlan={openPlanInBible} onOpenBibleTarget={openBibleTarget} />;"
+          case_replacement = "case 'reading-plans': return <ReadingPlansScreen onBack={() => setScreen('home')} onOpenPlan={openPlanInBible} onOpenBibleTarget={openBibleTarget} studyProgress={studyProgress} onToggleDay={toggleReadingPlanDay} />;"
+          if case_marker in s:
+              s = s.replace(case_marker, case_replacement, 1)
           open_marker = "  const openPlanInBible = (plan: ReadingPlan) => {\n    const target = getPlanReferenceTarget(plan);"
           if "const realPlanProgress = getStudyPlanProgress(studyProgress" not in s:
               if open_marker not in s: raise SystemExit('openPlanInBible marker not found')
-              replacement = "  const openPlanInBible = (plan: ReadingPlan) => {\n    const realPlanProgress = getStudyPlanProgress(studyProgress, plan.id, plan.days);\n    const realPlan = { ...plan, progress: realPlanProgress.progress, currentDay: Math.min(realPlanProgress.completedDays + 1, plan.days) };\n    const target = getPlanReferenceTarget(realPlan);"
-              s = s.replace(open_marker, replacement, 1)
-
+              s = s.replace(open_marker, "  const openPlanInBible = (plan: ReadingPlan) => {\n    const realPlanProgress = getStudyPlanProgress(studyProgress, plan.id, plan.days);\n    const realPlan = { ...plan, progress: realPlanProgress.progress, currentDay: Math.min(realPlanProgress.completedDays + 1, plan.days) };\n    const target = getPlanReferenceTarget(realPlan);", 1)
           p.write_text(s)
           PY
           npm ci
@@ -100,9 +87,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/App.tsx
-          git commit -m "feat: integrate persistent study progress" 
+          git commit -m "feat: integrate persistent study progress"
           git push
-          rm -f .github/workflows/stage-6-complete.yml
-          git add .github/workflows/stage-6-complete.yml
+          rm -f .github/workflows/stage-6-complete.yml stage-6-trigger.txt
+          git add .github/workflows/stage-6-complete.yml stage-6-trigger.txt
           git commit -m "chore: remove temporary stage 6 workflow"
           git push
