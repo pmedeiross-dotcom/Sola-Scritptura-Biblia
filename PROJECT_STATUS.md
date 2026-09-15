@@ -18,7 +18,7 @@
 4. Auditoria de Anotações e persistência: **CONCLUÍDA — auditoria realizada; migração IndexedDB/localStorage ainda não executada**
 5. Importação/exportação: **CONCLUÍDA — implementação existente auditada e documentada**
 6. Progresso de estudo: **EM ANDAMENTO — integração inicial com a Home concluída; integração com a tela ativa de planos/backup ainda pendente**
-7. Rastreamento de atividade: **EM ANDAMENTO — modelo persistente criado; integração com o fluxo ativo ainda pendente**
+7. Rastreamento de atividade: **CONCLUÍDA**
 8. Parser bíblico e Strong: **PENDENTE**
 9. Confissões/IA: **PENDENTE**
 10. Arquitetura e performance: **PENDENTE**
@@ -32,26 +32,17 @@
 - `HomeScreenV3` já consome o progresso real e permite concluir o próximo dia dos planos estáticos.
 - Pendências: integrar a tela ativa de planos, fazer `Continuar` respeitar o próximo dia não concluído, incluir no backup/restauração e validar persistência completa.
 
-## Etapa 7: Rastreamento de atividade — em andamento
+## Etapa 7: Rastreamento de atividade — concluída
 
-### Implementação inicial
-
-- Criado `src/activityTracking.ts`.
-- Persistência local em `activity-events-v1`.
-- Limite de retenção: 200 eventos.
-- Cada evento possui `id`, `type`, `label` e `timestamp`.
-- Leitura defensiva descarta JSON inválido e registros incompatíveis.
-- Eventos vazios são ignorados.
-- O evento `screen_view / Tela: Library`, já classificado como inútil no fluxo existente, continua sendo filtrado.
-- `appendActivityEvent` centraliza validação, limite e persistência.
-- Documentação registrada em `docs/ETAPA_7.md`.
-
-### Próximo trabalho obrigatório
-
-- Integrar o módulo ao `App.tsx` sem substituição destrutiva do arquivo.
-- Remover a limpeza automática de `activity-events-v1`, se ainda presente.
-- Revisar os pontos de rastreamento para manter somente eventos úteis.
-- Validar lint/build/check e persistência antes de concluir a etapa.
+- `src/activityTracking.ts` está integrado ao fluxo ativo de `App.tsx`.
+- Persistência local em `activity-events-v1`, com retenção máxima de 200 eventos.
+- Eventos inválidos, vazios e `screen_view / Tela: Library` são filtrados centralmente.
+- O rastreamento está habilitado e o estado é inicializado a partir do armazenamento persistido.
+- A limpeza automática na montagem foi removida; a limpeza manual continua funcionando.
+- Pontos de rastreamento existentes para notas, planos, importações, metas e onboarding continuam ativos.
+- Backup/restauração inclui `activityEvents`.
+- `docs/ETAPA_7.md` registra a implementação final.
+- Lint/build/check foram executados com sucesso no workflow da etapa.
 
 ## Problemas conhecidos
 
@@ -77,6 +68,6 @@
 
 ### 2026-09-15
 
-- Avançada a Etapa 7: criado `src/activityTracking.ts` e registrada sua documentação em `docs/ETAPA_7.md`.
-- Mantida a Etapa 7 como **EM ANDAMENTO** até a integração com o fluxo ativo.
-- Mantida a Etapa 6 como **EM ANDAMENTO** pelas pendências de integração da tela de planos e backup.
+- Etapa 7 concluída: rastreamento persistente integrado ao fluxo ativo, sem limpeza automática na montagem.
+- `docs/ETAPA_7.md` atualizado com a implementação final e validação.
+- A Etapa 6 permanece **EM ANDAMENTO** pelas pendências de integração da tela ativa de planos e backup.
