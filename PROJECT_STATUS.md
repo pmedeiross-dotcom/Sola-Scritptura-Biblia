@@ -17,7 +17,7 @@
 3. Salvar Estudo em Anotações: **CONCLUÍDA**
 4. Auditoria de Anotações e persistência: **CONCLUÍDA — auditoria realizada; migração IndexedDB/localStorage ainda não executada**
 5. Importação/exportação: **CONCLUÍDA — implementação existente auditada e documentada**
-6. Progresso de estudo: **EM ANDAMENTO — auditoria revelou progresso de planos parcialmente calculado e dados de progresso ainda não consolidados em uma fonte persistente única**
+6. Progresso de estudo: **EM ANDAMENTO — modelo persistente criado; integração com os planos ativos ainda pendente**
 7. Rastreamento de atividade: **PENDENTE**
 8. Parser bíblico e Strong: **PENDENTE**
 9. Confissões/IA: **PENDENTE**
@@ -91,13 +91,24 @@
 - `goal-targets-v1` é persistido em `localStorage` e representa metas, mas não substitui um registro consolidado de capítulos/versículos efetivamente concluídos.
 - A estrutura legada `StudyPlan`/`StudySession` possui `progress`, `completedSessions` e `isCompleted`, mas pertence ao fluxo legado baseado em IndexedDB e não constitui a fonte ativa do progresso.
 
+### Implementação atual
+
+- Criado `src/studyProgress.ts` como fonte persistente versionada para dias de planos explicitamente concluídos.
+- Chave de armazenamento: `study-progress-v1`.
+- Cada registro contém `planId`, `day` e `completedAt` e é identificado de forma estável por `planId:day`.
+- O módulo valida o conteúdo lido do `localStorage` e tolera JSON inválido sem quebrar a aplicação.
+- `toggleStudyDay` permite concluir/desmarcar um dia sem criar duplicatas.
+- `getStudyPlanProgress` calcula dias concluídos e percentual exclusivamente a partir dos registros reais.
+- A implementação foi integrada à `main` pela PR #8.
+- Documentação detalhada registrada em `docs/ETAPA_6.md`.
+
 ### Pendências para concluir a etapa
 
-- Definir uma fonte única de verdade para progresso do usuário.
-- Persistir explicitamente sessões/capítulos concluídos, em vez de depender somente da passagem do tempo para planos personalizados.
+- Integrar a fonte de progresso aos planos ativos em `App.tsx`.
+- Permitir marcar a leitura do dia como concluída e atualizar imediatamente o progresso.
 - Integrar o progresso real à experiência de continuidade da Home.
 - Evitar que valores demonstrativos dos planos estáticos sejam apresentados como progresso pessoal real.
-- Definir como o progresso será incluído no backup/restauração futuro sem conflitar com o formato já existente.
+- Incluir `study-progress-v1` no backup/restauração futuro sem quebrar o formato existente.
 - Validar o fluxo completo: iniciar plano → concluir leitura → atualizar progresso → fechar/reabrir app → continuar no ponto correto.
 
 ## Problemas conhecidos
@@ -142,6 +153,13 @@ Uma etapa só deve ser marcada como concluída quando:
 7. O resultado foi registrado neste arquivo.
 
 ## Registro de alterações
+
+### 2026-09-15
+
+- Avançada a Etapa 6: criado e integrado o modelo persistente `src/studyProgress.ts`.
+- Adicionada a documentação `docs/ETAPA_6.md`.
+- PR #8 integrada à `main`.
+- Mantida a etapa como **EM ANDAMENTO** porque a UI dos planos ativos ainda não consome o novo modelo.
 
 ### 2026-09-15
 
