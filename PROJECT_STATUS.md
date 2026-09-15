@@ -18,7 +18,7 @@
 4. Auditoria de Anotações e persistência: **CONCLUÍDA — auditoria realizada; migração IndexedDB/localStorage ainda não executada**
 5. Importação/exportação: **CONCLUÍDA — implementação existente auditada e documentada**
 6. Progresso de estudo: **EM ANDAMENTO — integração inicial com a Home concluída; integração com a tela ativa de planos/backup ainda pendente**
-7. Rastreamento de atividade: **PENDENTE**
+7. Rastreamento de atividade: **EM ANDAMENTO — modelo persistente criado; integração com o fluxo ativo ainda pendente**
 8. Parser bíblico e Strong: **PENDENTE**
 9. Confissões/IA: **PENDENTE**
 10. Arquitetura e performance: **PENDENTE**
@@ -27,40 +27,34 @@
 
 ## Etapa 6: Progresso de estudo — em andamento
 
-### Auditoria realizada
-
-- Existem planos estáticos em `READING_PLANS` com valores de `progress` e `currentDay` definidos no código; esses valores não representam, por si só, progresso real do usuário.
-- Existem planos personalizados persistidos em `custom-reading-plans-v1`.
-- O cálculo de plano personalizado usa `getCurrentPlanDay(plan)`, derivando o dia a partir da data de início e da data atual.
-- `reading-locations` é persistido em `localStorage` e permite recuperar o último ponto salvo de leitura.
-- `goal-targets-v1` é persistido em `localStorage` e representa metas, mas não substitui um registro consolidado de capítulos/versículos efetivamente concluídos.
-- A estrutura legada `StudyPlan`/`StudySession` possui progresso e conclusão, mas pertence ao fluxo legado e não constitui a fonte ativa.
-
-### Implementação atual
-
-- Criado `src/studyProgress.ts` como fonte persistente versionada para dias de planos explicitamente concluídos.
+- `src/studyProgress.ts` é a fonte persistente versionada para dias explicitamente concluídos.
 - Chave: `study-progress-v1`.
-- Registros usam `planId`, `day` e `completedAt`, com identificador estável `planId:day`.
-- Leitura defensiva tolera JSON inválido sem quebrar a aplicação.
-- `toggleStudyDay` permite concluir/desmarcar um dia sem duplicação.
-- `getStudyPlanProgress` calcula o percentual somente a partir dos registros reais.
-- A implementação foi integrada à `main` pela PR #8.
-- `HomeScreenV3` agora lê `study-progress-v1` e calcula `progress`/`currentDay` a partir das conclusões reais.
-- A Home passou a oferecer ação explícita `Concluir dia`, persistindo a conclusão e atualizando imediatamente o percentual.
-- Os valores demonstrativos dos três planos estáticos não são mais usados para exibição na Home.
-- Documentação registrada em `docs/ETAPA_6.md`.
+- `HomeScreenV3` já consome o progresso real e permite concluir o próximo dia dos planos estáticos.
+- Pendências: integrar a tela ativa de planos, fazer `Continuar` respeitar o próximo dia não concluído, incluir no backup/restauração e validar persistência completa.
+
+## Etapa 7: Rastreamento de atividade — em andamento
+
+### Implementação inicial
+
+- Criado `src/activityTracking.ts`.
+- Persistência local em `activity-events-v1`.
+- Limite de retenção: 200 eventos.
+- Cada evento possui `id`, `type`, `label` e `timestamp`.
+- Leitura defensiva descarta JSON inválido e registros incompatíveis.
+- Eventos vazios são ignorados.
+- O evento `screen_view / Tela: Library`, já classificado como inútil no fluxo existente, continua sendo filtrado.
+- `appendActivityEvent` centraliza validação, limite e persistência.
+- Documentação registrada em `docs/ETAPA_7.md`.
 
 ### Próximo trabalho obrigatório
 
-- Integrar a mesma fonte de progresso à tela ativa de planos em `App.tsx`.
-- Fazer o fluxo de `Continuar` respeitar o próximo dia não concluído.
-- Incluir `study-progress-v1` no backup/restauração.
-- Validar persistência após fechar/reabrir o aplicativo.
-- Validar que não haja divergência entre Home e tela de planos.
+- Integrar o módulo ao `App.tsx` sem substituição destrutiva do arquivo.
+- Remover a limpeza automática de `activity-events-v1`, se ainda presente.
+- Revisar os pontos de rastreamento para manter somente eventos úteis.
+- Validar lint/build/check e persistência antes de concluir a etapa.
 
 ## Problemas conhecidos
 
-- `ENABLE_ACTIVITY_TRACKING = false` e existe limpeza silenciosa de `activity-events-v1`; decidir entre reativar corretamente ou remover a interface correspondente.
 - O botão de IA das confissões está sem implementação real e deve ser removido ou conectado a uma função válida.
 - O parser Strong pode não aceitar sufixos como `{H1234a}`.
 - O parser de versos pode confundir linhas de continuação iniciadas por números dependendo do formato importado.
@@ -83,7 +77,6 @@
 
 ### 2026-09-15
 
-- Integrado `HomeScreenV3` ao modelo persistente `study-progress-v1`.
-- A Home passou a exibir progresso e próximo dia com base em conclusões reais.
-- Adicionada ação explícita para concluir o próximo dia de cada plano estático.
-- Registrada a alteração neste arquivo.
+- Avançada a Etapa 7: criado `src/activityTracking.ts` e registrada sua documentação em `docs/ETAPA_7.md`.
+- Mantida a Etapa 7 como **EM ANDAMENTO** até a integração com o fluxo ativo.
+- Mantida a Etapa 6 como **EM ANDAMENTO** pelas pendências de integração da tela de planos e backup.
