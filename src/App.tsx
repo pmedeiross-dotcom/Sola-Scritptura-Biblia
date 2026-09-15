@@ -38,7 +38,7 @@ const Markdown = React.lazy(() => import('react-markdown'));
 import { BOOKS } from './services/bibleCatalog';
 import type { BibleContent } from './services/bibleService';
 import { getPericopeSections } from './services/pericopeData';
-import { formatInternalBibleAIReportMarkdown, runInternalBibleAI } from './services/internalBibleAI';
+const loadInternalBibleAI = () => import('./services/internalBibleAI');
 import { translateStrongDefinitionToPtBr } from './services/strongsTranslation';
 import { WESTMINSTER_CONFESSION } from './data/westminsterConfession';
 import { HEIDELBERG_CATECHISM } from './data/heidelbergCatechism';
@@ -2961,6 +2961,7 @@ const StudyScreen = ({
     setLoading(true);
     setResponse(null);
     try {
+      const { runInternalBibleAI, formatInternalBibleAIReportMarkdown } = await loadInternalBibleAI();
       const report = await runInternalBibleAI({
         termsInput: query,
         scope,
