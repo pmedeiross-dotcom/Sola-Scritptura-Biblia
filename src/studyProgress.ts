@@ -17,30 +17,54 @@ export const emptyStudyProgress = (): StudyProgressState => ({
   entries: [],
 });
 
+const normalizeEntries = (entries: unknown[]): StudyProgressEntry[] => {
+  const seen = new Set<string>();
+  const normalized: StudyProgressEntry[] = [];
+
+  for (const entry of entries) {
+    if (!entry || typeof entry !== 'object') continue;
+    const candidate = entry as Partial<StudyProgressEntry>;
+    if (
+      typeof candidate.id !== 'string' ||
+      typeof candidate.planId !== 'string' ||
+      !candidate.planId.trim() ||
+      !Number.isInteger(candidate.day) ||
+      candidate.day < 1 ||
+      typeof candidate.completedAt !== 'number' ||
+      !Number.isFinite(candidate.completedAt)
+    ) {
+      continue;
+    }
+
+    const key = `${candidate.planId}:${candidate.day}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    normalized.push({
+      id: key,
+      planId: candidate.planId,
+      day: candidate.day,
+      completedAt: candidate.completedAt,
+    });
+  }
+
+  return normalized;
+};
+
 export const readStudyProgress = (): StudyProgressState => {
   try {
     const raw = localStorage.getItem(STUDY_PROGRESS_STORAGE_KEY);
     if (!raw) return emptyStudyProgress();
     const parsed = JSON.parse(raw) as Partial<StudyProgressState>;
     if (!Array.isArray(parsed.entries)) return emptyStudyProgress();
-    const entries = parsed.entries.filter(
-      (entry): entry is StudyProgressEntry => Boolean(
-        entry &&
-        typeof entry.id === 'string' &&
-        typeof entry.planId === 'string' &&
-        Number.isInteger(entry.day) &&
-        entry.day > 0 &&
-        typeof entry.completedAt === 'number'
-      )
-    );
-    return { version: 1, entries };
+    return { version: 1, entries: normalizeEntries(parsed.entries) };
   } catch {
     return emptyStudyProgress();
   }
 };
 
 export const writeStudyProgress = (state: StudyProgressState) => {
-  localStorage.setItem(STUDY_PROGRESS_STORAGE_KEY, JSON.stringify(state));
+  const entries = normalizeEntries(state.entries);
+  localStorage.setItem(STUDY_PROGRESS_STORAGE_KEY, JSON.stringify({ version: 1, entries }));
 };
 
 export const isStudyDayCompleted = (state: StudyProgressState, planId: string, day: number) =>
@@ -51,7 +75,7 @@ export const toggleStudyDay = (state: StudyProgressState, planId: string, day: n
   if (existing) {
     return {
       version: 1,
-      entries: state.entries.filter(entry => entry.id !== existing.id),
+      entries: state.entries.filter(entry => entry.planId !== planId || entry.day !== day),
     };
   }
 
@@ -71,7 +95,11 @@ export const toggleStudyDay = (state: StudyProgressState, planId: string, day: n
 
 export const getStudyPlanProgress = (state: StudyProgressState, planId: string, totalDays: number) => {
   const safeTotal = Math.max(1, totalDays);
-  const completedDays = state.entries.filter(entry => entry.planId === planId).length;
+  const completedDays = new Set(
+    state.entries
+      .filter(entry => entry.planId === planId)
+      .map(entry => entry.day)
+  ).size;
   return {
     completedDays: Math.min(completedDays, safeTotal),
     progress: Math.min(100, Math.round((completedDays / safeTotal) * 100)),
