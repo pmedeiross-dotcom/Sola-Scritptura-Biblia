@@ -1148,6 +1148,7 @@ const BibleScreen = ({
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [scrollButtonsActive, setScrollButtonsActive] = useState(true);
+  const [studySaved, setStudySaved] = useState(false);
   const [navHistory, setNavHistory] = useState<Array<{ bookName: string; chapter: number }>>([
     { bookName: BOOKS[0].name, chapter: 1 }
   ]);
@@ -2840,10 +2841,12 @@ const LibraryScreen = ({
 const StudyScreen = ({
   goalTargets,
   onApplyGoalProfile,
+  onAddNote,
   availableVersions,
 }: {
   goalTargets: GoalTargets;
   onApplyGoalProfile: (profile: GoalProfile) => void;
+  onAddNote: (ref: string, content: string) => void;
   availableVersions: string[];
 }) => {
   const [query, setQuery] = useState('');
@@ -2859,6 +2862,7 @@ const StudyScreen = ({
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [scrollButtonsActive, setScrollButtonsActive] = useState(true);
+  const [studySaved, setStudySaved] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const studyScrollRef = useRef<HTMLDivElement | null>(null);
   const scrollButtonsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2935,6 +2939,7 @@ const StudyScreen = ({
   };
 
   const handleStudy = async () => {
+    setStudySaved(false);
     if (!query.trim()) return;
     setLoading(true);
     setResponse(null);
@@ -2988,6 +2993,13 @@ const StudyScreen = ({
 
   const scrollStudyTop = () => {
     studyScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSaveStudy = () => {
+    if (!response) return;
+    const reference = scope === 'bible' ? 'Estudo bíblico' : `Estudo: ${referenceInput.trim() || 'referência'}`;
+    onAddNote(reference, `Consulta: ${query.trim()}\n\n${response}`);
+    setStudySaved(true);
   };
 
   const scrollStudyBottom = () => {
@@ -3181,7 +3193,13 @@ const StudyScreen = ({
           <div className="prose prose-sm dark:prose-invert max-w-none reading-text">
             <LazyMarkdown>{response}</LazyMarkdown>
           </div>
-          <div ref={scrollRef} />
+          <div ref={scrollRef} />    <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-3">
+      <button type="button" onClick={handleSaveStudy} disabled={studySaved} className="flex-1 py-3 rounded-2xl bg-petrol-500 text-white font-bold disabled:opacity-70">
+        {studySaved ? 'Estudo salvo em Anotações' : 'Salvar estudo em Anotações'}
+      </button>
+      {studySaved && <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Consulta registrada.</span>}
+    </div>
+
         </motion.div>
       )}
 
@@ -3220,6 +3238,7 @@ const ConfessionsScreen = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [scrollButtonsActive, setScrollButtonsActive] = useState(true);
+  const [studySaved, setStudySaved] = useState(false);
   const contentScrollRef = useRef<HTMLDivElement | null>(null);
   const scrollButtonsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -4913,7 +4932,7 @@ export default function App() {
           />
         );
       case 'bible': return <BibleScreen onAddNote={addNote} availableVersions={bibleVersionCodes} />;
-      case 'study': return <StudyScreen goalTargets={goalTargets} onApplyGoalProfile={applyGoalProfile} availableVersions={bibleVersionCodes} />;
+      case 'study': return <StudyScreen goalTargets={goalTargets} onApplyGoalProfile={applyGoalProfile} onAddNote={addNote} availableVersions={bibleVersionCodes} />;
       case 'confessions': return <ConfessionsScreen />;
       case 'library':
         return (
