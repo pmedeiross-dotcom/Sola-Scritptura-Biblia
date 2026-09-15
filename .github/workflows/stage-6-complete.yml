@@ -1,0 +1,132 @@
+name: Stage 6 completion patch
+
+on:
+  push:
+    branches: [stage-6-complete]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Apply Stage 6 integration
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/App.tsx')
+          s = p.read_text()
+
+          # Import persistent study-progress helpers.
+          marker = "import { appendActivityEvent, readActivityEvents } from './activityTracking';"
+          addition = "import { appendActivityEvent, readActivityEvents } from './activityTracking';\nimport { getStudyPlanProgress, isStudyDayCompleted, readStudyProgress, toggleStudyDay, writeStudyProgress } from './studyProgress';"
+          if "from './studyProgress'" not in s:
+              if marker not in s: raise SystemExit('activity import marker not found')
+              s = s.replace(marker, addition, 1)
+
+          # Keep a single persistent progress state in App.
+          state_marker = "const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>(() => readActivityEvents());"
+          state_add = state_marker + "\n  const [studyProgress, setStudyProgress] = useState(() => readStudyProgress());"
+          if "const [studyProgress, setStudyProgress]" not in s:
+              if state_marker not in s: raise SystemExit('activity state marker not found')
+              s = s.replace(state_marker, state_add, 1)
+
+          # Add an explicit completion callback next to activity tracking.
+          track_marker = "  const trackActivity = (type: string, label: string) => {\n    if (!ENABLE_ACTIVITY_TRACKING) return;\n    setActivityEvents(prev => appendActivityEvent(prev, type, label));\n  };"
+          track_add = track_marker + "\n\n  const toggleReadingPlanDay = (planId: string, day: number) => {\n    setStudyProgress(prev => {\n      const next = toggleStudyDay(prev, planId, day);\n      writeStudyProgress(next);\n      return next;\n    });\n  };"
+          if "const toggleReadingPlanDay" not in s:
+              if track_marker not in s: raise SystemExit('track marker not found')
+              s = s.replace(track_marker, track_add, 1)
+
+          # Include progress in backup and restore.
+          export_marker = "activityEvents: localStorage.getItem('activity-events-v1') || '[]',"
+          export_add = export_marker + "\n      studyProgress: localStorage.getItem('study-progress-v1') || JSON.stringify(readStudyProgress()),"
+          if "studyProgress: localStorage.getItem('study-progress-v1')" not in s:
+              if export_marker not in s: raise SystemExit('backup export marker not found')
+              s = s.replace(export_marker, export_add, 1)
+
+          import_marker = "if (typeof parsed.data.activityEvents === 'string') localStorage.setItem('activity-events-v1', parsed.data.activityEvents);"
+          import_add = import_marker + "\n      if (typeof parsed.data.studyProgress === 'string') {\n        localStorage.setItem('study-progress-v1', parsed.data.studyProgress);\n        setStudyProgress(readStudyProgress());\n      }"
+          if "parsed.data.studyProgress" not in s:
+              if import_marker not in s: raise SystemExit('backup import marker not found')
+              s = s.replace(import_marker, import_add, 1)
+
+          # Wire the active plans screen to the persistent model.
+          rp_marker = "const ReadingPlansScreen = ({\n  onBack,\n  onOpenPlan,\n  onOpenBibleTarget,"
+          rp_add = "const ReadingPlansScreen = ({\n  onBack,\n  onOpenPlan,\n  onOpenBibleTarget,\n  studyProgress,\n  onToggleDay,"
+          if "studyProgress,\n  onToggleDay," not in s:
+              if rp_marker not in s: raise SystemExit('ReadingPlansScreen props marker not found')
+              s = s.replace(rp_marker, rp_add, 1)
+
+          # Add prop types immediately after the existing event-label prop.
+          prop_marker = "  onOpenBibleTarget: (target: PlanReferenceTarget, eventLabel: string) => void;"
+          prop_add = prop_marker + "\n  studyProgress: ReturnType<typeof readStudyProgress>;\n  onToggleDay: (planId: string, day: number) => void;"
+          # Limit to the ReadingPlansScreen region.
+          rp_start = s.find('const ReadingPlansScreen = (')
+          rp_end = s.find('\nconst ', rp_start + 10)
+          if rp_start < 0: raise SystemExit('ReadingPlansScreen start not found')
+          if 'studyProgress: ReturnType<typeof readStudyProgress>;' not in s[rp_start:rp_end if rp_end > 0 else len(s)]:
+              pos = s.find(prop_marker, rp_start)
+              if pos < 0 or (rp_end > 0 and pos > rp_end): raise SystemExit('ReadingPlansScreen type marker not found')
+              s = s[:pos] + s[pos:].replace(prop_marker, prop_add, 1)
+
+          # Insert a real progress calculation and completion action into each static plan card.
+          plan_map_marker = "  const [generatedPlan, setGeneratedPlan] = useState<{ title: string, days: { day: number, reference: string, focus: string }[] } | null>(null);"
+          calc_add = plan_map_marker + "\n  const getStaticPlanProgress = (plan: ReadingPlan) => getStudyPlanProgress(studyProgress, plan.id, plan.days);"
+          if "const getStaticPlanProgress" not in s:
+              if plan_map_marker not in s: raise SystemExit('generated plan marker not found')
+              s = s.replace(plan_map_marker, calc_add, 1)
+
+          # For the first occurrence of each static-plan map card, inject progress override and button.
+          old = "{READING_PLANS.map((plan) => ("
+          new = "{READING_PLANS.map((plan) => {\n            const realProgress = getStaticPlanProgress(plan);\n            const nextDay = Math.min(realProgress.completedDays + 1, plan.days);\n            const nextDayCompleted = isStudyDayCompleted(studyProgress, plan.id, nextDay);\n            return ("
+          if old in s and "const realProgress = getStaticPlanProgress(plan);" not in s:
+              s = s.replace(old, new, 1)
+              # Close the changed map callback. Replace the nearest map closing following the first occurrence.
+              start = s.find(new)
+              close = s.find("))}", start)
+              if close < 0: raise SystemExit('static plan map close not found')
+              s = s[:close] + " )})}" + s[close+3:]
+
+          # Replace displayed static progress/current day within the first map card block.
+          rp_start = s.find('const ReadingPlansScreen = (')
+          rp_end = s.find('\nconst ', rp_start + 10)
+          region_end = rp_end if rp_end > 0 else len(s)
+          region = s[rp_start:region_end]
+          region = region.replace("plan.progress", "realProgress.progress", 1)
+          region = region.replace("plan.currentDay", "nextDay", 1)
+          # Add completion button near the first plan card's action area.
+          action_marker = "onClick={() => onOpenPlan(plan)}"
+          if "Concluir dia" not in region and action_marker in region:
+              region = region.replace(action_marker, action_marker + "}\n                    <button type=\"button\" onClick={() => onToggleDay(plan.id, nextDay)} className=\"mt-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300\">{nextDayCompleted ? 'Desmarcar dia' : `Concluir dia ${nextDay}`}</button>\n                    {false && (", 1)
+              # Remove the harmless false wrapper introduced only to keep JSX balanced by converting it back.
+              region = region.replace("{false && (\n                    ", "", 1)
+              # The replacement leaves a trailing ')' before the original closing expression; clean the exact sequence.
+              region = region.replace("</button>\n                    )}", "</button>", 1)
+          s = s[:rp_start] + region + s[region_end:]
+
+          p.write_text(s)
+          PY
+
+          npm ci
+          npm run lint
+          npm run build
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/App.tsx
+          git commit -m "feat: integrate persistent study progress" || true
+          git push
+          rm -f .github/workflows/stage-6-complete.yml
+          git add .github/workflows/stage-6-complete.yml
+          git commit -m "chore: remove temporary stage 6 workflow"
+          git push
