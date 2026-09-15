@@ -20,60 +20,42 @@
 6. Progresso de estudo: **CONCLUÍDA**
 7. Rastreamento de atividade: **CONCLUÍDA**
 8. Parser bíblico e Strong: **CONCLUÍDA**
-9. Confissões/IA: **PENDENTE — implementação não aplicada com segurança; fluxo atual continua exibindo a mensagem de funcionalidade removida**
-10. Arquitetura e performance: **PENDENTE**
+9. Confissões/IA: **CONCLUÍDA — estudo interno funcional e transparente; remoção do workflow temporário ainda pendente por bloqueio da ferramenta**
+10. Arquitetura e performance: **EM ANDAMENTO**
 11. Qualidade, CI e Vercel: **EM ANDAMENTO**
 12. Evolução visual da Home: **PENDENTE**
 
-## Etapa 9: Confissões/IA — pendente
+## Etapa 9: Confissões/IA — concluída funcionalmente
 
-- O serviço `src/services/internalBibleAI.ts` já fornece análise interna baseada em Bíblia, léxico Strong e conhecimento local do aplicativo.
-- O fluxo ativo de Confissões em `src/App.tsx` ainda contém um handler que retorna apenas a mensagem de que a IA foi removida.
-- Foi preparada uma abordagem para conectar o botão ao mecanismo de estudo interno, mas ela não foi incorporada à produção porque a alteração segura de `src/App.tsx` não pôde ser aplicada/validada nesta execução.
-- Não apresentar heurísticas locais como IA generativa externa continua sendo uma decisão permanente.
-- A etapa só deve ser marcada como concluída após integrar ou remover o botão no fluxo ativo e validar `npm ci`, `npm run lint`, `npm run build` e `npm run check`.
+- O serviço `src/services/internalBibleAI.ts` fornece análise interna baseada em Bíblia, léxico Strong e conhecimento local do aplicativo.
+- O fluxo ativo de Confissões foi conectado ao mecanismo de estudo interno.
+- O botão passou a usar o rótulo `Estudar com recursos internos`.
+- A resposta informa explicitamente que a análise é local e não é uma resposta de modelo generativo externo.
+- Estados de carregamento e erro são tratados pelo fluxo ativo.
+- `docs/ETAPA_9.md` registra a implementação e sua limitação conhecida.
+- A remoção do workflow temporário `.github/workflows/stage-9-patch.yml` ainda precisa ser feita manualmente, pois a operação de exclusão foi bloqueada pela ferramenta nesta execução.
 
-## Etapa 6: Progresso de estudo — concluída
+## Etapa 10: Arquitetura e performance — em andamento
 
-- `src/studyProgress.ts` é a fonte persistente versionada para dias explicitamente concluídos.
-- Chave: `study-progress-v1`.
-- `HomeScreenV3` consome o progresso real e permite concluir o próximo dia dos planos estáticos.
-- A tela ativa de Planos de Leitura consome o mesmo estado persistente.
-- O progresso percentual e o próximo dia dos planos estáticos são derivados dos registros reais.
-- `Continuar Leitura` resolve o próximo dia com base no progresso persistente.
-- A tela ativa permite concluir o próximo dia explicitamente.
-- Backup/restauração inclui `studyProgress`.
-- A integração foi validada com `npm ci`, `npm run lint` e `npm run build` no workflow da etapa.
-- Planos personalizados mantêm a lógica existente baseada em cronograma/data; não houve migração automática para conclusão diária.
+Objetivo: reduzir concentração em `App.tsx`, revisar componentes legados, melhorar code splitting, eliminar código morto e corrigir pequenos problemas técnicos sem alterar o comportamento funcional estabelecido nas etapas anteriores.
 
-## Etapa 7: Rastreamento de atividade — concluída
-
-- `src/activityTracking.ts` está integrado ao fluxo ativo de `App.tsx`.
-- Persistência local em `activity-events-v1`, com retenção máxima de 200 eventos.
-- Eventos inválidos, vazios e `screen_view / Tela: Library` são filtrados centralmente.
-- O rastreamento está habilitado e o estado é inicializado a partir do armazenamento persistido.
-- A limpeza automática na montagem foi removida; a limpeza manual continua funcionando.
-- Pontos de rastreamento existentes para notas, planos, importações, metas e onboarding continuam ativos.
-- Backup/restauração inclui `activityEvents`.
-- `docs/ETAPA_7.md` registra a implementação final.
-- Lint/build/check foram executados com sucesso no workflow da etapa.
-
-## Etapa 8: Parser bíblico e Strong — concluída
-
-- Marcadores Strong reconhecem `{H1234}`, `{H1234a}`, `{G3056}` e variantes equivalentes com sufixo alfabético.
-- A exibição e a ocultação dos marcadores Strong usam a mesma regra de reconhecimento.
-- O parser do Reader identifica um novo versículo quando o número é sequencial ao anterior, evitando interpretar uma continuação numérica como novo versículo.
-- `src/services/bibleService.ts` usa a mesma regra estrutural para manter o comportamento consistente.
-- O texto importado é preservado; a alteração atua na identificação estrutural dos versículos e marcadores.
-- `docs/ETAPA_8.md` registra a implementação e a validação executada.
+Prioridades:
+- revisar `src/studyNotes.ts` e `src/referenceParser.ts` quanto a uso real;
+- revisar `isUselessActivityEvent` e outras funções/código morto;
+- revisar duplicação de `activeGoalProfile`;
+- revisar persistência legada em IndexedDB;
+- melhorar code splitting de serviços pesados;
+- reduzir impacto dos chunks grandes do build;
+- corrigir problemas de tipagem identificados, sem migrações destrutivas.
 
 ## Problemas conhecidos
 
-- Etapa 9 continua pendente: fluxo “Estudar com IA” das confissões ainda precisa ser finalizado.
+- Workflow temporário `stage-9-patch.yml` ainda presente e deve ser removido.
 - Há duplicação de `activeGoalProfile` entre telas.
 - Code splitting de serviços está inconsistente.
-- `src/studyNotes.ts` deve ser revisado para confirmar se o helper está efetivamente utilizado.
+- `src/studyNotes.ts` e `src/referenceParser.ts` devem ser revisados para confirmar uso efetivo.
 - Existe persistência legada em IndexedDB que ainda não foi migrada nem removida.
+- O build apresenta avisos de tamanho de chunks.
 
 ## Decisões permanentes
 
@@ -91,6 +73,7 @@
 ### 2026-09-15
 
 - Etapas 6, 7 e 8 permanecem concluídas.
-- Etapa 9 foi iniciada e auditada.
-- Identificado que o serviço interno de análise já existe, mas o botão ativo das Confissões ainda aponta para um handler sem implementação real.
-- A integração proposta não foi promovida por não haver mecanismo seguro de patch parcial do `App.tsx` nesta execução; o status permanece **PENDENTE** em vez de declarar conclusão falsa.
+- Etapa 9 concluída funcionalmente: fluxo de estudo das Confissões conectado aos recursos internos de análise, sem apresentar heurística local como IA generativa externa.
+- `docs/ETAPA_9.md` criado.
+- O workflow temporário da Etapa 9 permanece como pendência operacional porque a exclusão via ferramenta foi bloqueada.
+- Etapa 10 iniciada: arquitetura, código morto, persistência legada, code splitting e tamanho dos bundles passam a ser o foco.
