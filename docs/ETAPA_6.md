@@ -1,34 +1,18 @@
 # Etapa 6 — Progresso de estudo
 
 ## Objetivo
-Consolidar o acompanhamento real da leitura e do estudo, com persistência local e continuidade entre sessões.
 
-## Auditoria da implementação atual
+Criar uma fonte persistente e explícita para registrar dias de planos concluídos, sem tratar valores demonstrativos ou passagem do tempo como progresso real do usuário.
 
-- Os planos estáticos (`READING_PLANS` e `HomeScreenV3`) ainda possuem `progress` e `currentDay` definidos diretamente no código.
-- Planos personalizados são persistidos em `custom-reading-plans-v1`.
-- O progresso visual dos planos personalizados é derivado da data de início (`getCurrentPlanDay`) e não de capítulos explicitamente concluídos.
-- Localizações de leitura são persistidas em `reading-locations` e permitem retomar um ponto salvo.
-- Metas são persistidas em `goal-targets-v1`, mas não representam capítulos/versículos efetivamente concluídos.
-- `StudyPlan`/`StudySession` existe no fluxo legado de IndexedDB e não é a fonte ativa do progresso.
+## Implementação
 
-## Decisão técnica
+- Adicionado `src/studyProgress.ts`.
+- Persistência versionada em `localStorage` com a chave `study-progress-v1`.
+- Cada conclusão é identificada por `planId + day` e registra `completedAt`.
+- Leitura do armazenamento é defensiva: JSON inválido ou estrutura incompatível retorna estado vazio.
+- `toggleStudyDay` permite concluir/desmarcar um dia sem duplicação.
+- `getStudyPlanProgress` calcula dias concluídos e percentual a partir dos registros reais.
 
-A fonte ativa de progresso deverá ser uma estrutura versionada e persistida no `localStorage`, separada de `reading-locations`. O registro deverá permitir:
+## Limite desta etapa
 
-1. identificar o plano;
-2. identificar a unidade concluída (dia/capítulo);
-3. registrar a data de conclusão;
-4. calcular progresso a partir de unidades concluídas;
-5. sobreviver ao fechamento e reabertura do aplicativo;
-6. ser incluído no backup/restauração sem alterar retroativamente o formato de backup existente.
-
-## Estado desta etapa
-
-**EM ANDAMENTO.**
-
-A auditoria está concluída, mas a etapa não deve ser marcada como concluída enquanto a unidade de progresso não estiver integrada ao fluxo ativo de planos e à continuidade da Home.
-
-## Próxima ação
-
-Implementar a fonte única `reading-progress-v1`, integrar conclusão de unidade ao fluxo de planos e fazer a Home consumir progresso real, eliminando os valores demonstrativos apresentados como progresso pessoal.
+A integração visual dos planos existentes em `App.tsx` e `HomeScreenV3.tsx` ainda requer alteração localizada nesses componentes. Esta entrega estabelece o modelo persistente sem substituir arquivos grandes.
