@@ -47,6 +47,7 @@ import strongsOpenScriptures from './data/strongs-open-scriptures.json';
 import OnboardingModal from './components/OnboardingModal';
 import HomeScreenV3 from './components/HomeScreenV3';
 import { appendActivityEvent, readActivityEvents } from './activityTracking';
+import { getStudyPlanProgress, readStudyProgress, toggleStudyDay, writeStudyProgress } from './studyProgress';
 import { processFile } from '../services/importer';
 import { getStoredVersions, saveBibleVersion, saveDictionaries, searchInDictionary, type StoredBibleMeta } from '../services/db';
 import type { DictionaryEntry } from '../types';
@@ -558,15 +559,23 @@ const ReadingPlansScreen = ({
   onBack,
   onOpenPlan,
   onOpenBibleTarget,
+  studyProgress,
+  onToggleDay,
 }: {
   onBack: () => void;
   onOpenPlan: (plan: ReadingPlan) => void;
   onOpenBibleTarget: (target: PlanReferenceTarget, eventLabel: string) => void;
+  studyProgress: ReturnType<typeof readStudyProgress>;
+  onToggleDay: (planId: string, day: number) => void;
 }) => {
   const [showGenerator, setShowGenerator] = useState(false);
   const [topic, setTopic] = useState('');
   const [loading, setLoading] = useState(false);
   const [generatedPlan, setGeneratedPlan] = useState<{ title: string, days: { day: number, reference: string, focus: string }[] } | null>(null);
+  const getActivePlan = (plan: ReadingPlan) => {
+    const progress = getStudyPlanProgress(studyProgress, plan.id, plan.days);
+    return { ...plan, progress: progress.progress, currentDay: Math.min(progress.completedDays + 1, plan.days) };
+  };
   const [customPlans, setCustomPlans] = useState<CustomReadingPlan[]>(() => {
     try {
       const saved = localStorage.getItem('custom-reading-plans-v1');
@@ -799,7 +808,7 @@ const ReadingPlansScreen = ({
                 <Calendar className="w-6 h-6" />
               </div>
               <div className="text-right">
-                <span className="text-sm font-bold block text-gray-900 dark:text-white">Dia {plan.currentDay}</span>
+                <span className="text-sm font-bold block text-gray-900 dark:text-white">Dia {getStudyPlanProgress(studyProgress, plan.id, plan.days).completedDays + 1}</span>
                 <span className="text-[10px] text-gray-400 uppercase font-bold">de {plan.days} dias</span>
               </div>
             </div>
@@ -808,18 +817,21 @@ const ReadingPlansScreen = ({
             <div className="space-y-3">
               <div className="flex justify-between items-center text-xs font-bold text-gray-400 uppercase tracking-wider">
                 <span>Progresso</span>
-                <span>{plan.progress}%</span>
+                <span>{getStudyPlanProgress(studyProgress, plan.id, plan.days).progress}%</span>
               </div>
               <div className="w-full h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                 <motion.div 
                   initial={{ width: 0 }}
-                  animate={{ width: `${plan.progress}%` }}
+                  animate={{ width: `${getStudyPlanProgress(studyProgress, plan.id, plan.days).progress}%` }}
                   className="h-full bg-petrol-500 shadow-[0_0_10px_rgba(13,148,136,0.5)]"
                 />
               </div>
             </div>
-            <button onClick={() => onOpenPlan(plan)} className="w-full mt-6 py-4 rounded-2xl bg-petrol-500 text-white font-bold shadow-lg shadow-petrol-500/20 active:scale-[0.98] transition-all">
+            <button onClick={() => onOpenPlan(getActivePlan(plan))} className="w-full mt-6 py-4 rounded-2xl bg-petrol-500 text-white font-bold shadow-lg shadow-petrol-500/20 active:scale-[0.98] transition-all">
               Continuar Leitura
+            </button>
+            <button type="button" onClick={() => onToggleDay(plan.id, Math.min(getStudyPlanProgress(studyProgress, plan.id, plan.days).completedDays + 1, plan.days))} className="w-full mt-2 py-2 rounded-xl border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-sm font-semibold transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
+              {getStudyPlanProgress(studyProgress, plan.id, plan.days).completedDays >= plan.days ? 'Plano concluído' : `Concluir dia ${Math.min(getStudyPlanProgress(studyProgress, plan.id, plan.days).completedDays + 1, plan.days)}`}
             </button>
           </div>
         );})}
@@ -4388,6 +4400,7 @@ export default function App() {
     }
   });
   const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>(() => readActivityEvents());
+  const [studyProgress, setStudyProgress] = useState(() => readStudyProgress());
   const [goalTargets, setGoalTargets] = useState<GoalTargets>(() => {
     const saved = localStorage.getItem('goal-targets-v1');
     if (saved) {
@@ -4507,9 +4520,19 @@ export default function App() {
     setActivityEvents(prev => appendActivityEvent(prev, type, label));
   };
 
+  const toggleReadingPlanDay = (planId: string, day: number) => {
+    setStudyProgress(prev => {
+      const next = toggleStudyDay(prev, planId, day);
+      writeStudyProgress(next);
+      return next;
+    });
+  };
+
 
   const openPlanInBible = (plan: ReadingPlan) => {
-    const target = getPlanReferenceTarget(plan);
+    const realPlanProgress = getStudyPlanProgress(studyProgress, plan.id, plan.days);
+    const realPlan = { ...plan, progress: realPlanProgress.progress, currentDay: Math.min(realPlanProgress.completedDays + 1, plan.days) };
+    const target = getPlanReferenceTarget(realPlan);
     openBibleTarget(target, `Plano ${plan.id} em ${target.label}`);
   };
 
@@ -4576,6 +4599,7 @@ export default function App() {
         verseCommentary: localStorage.getItem('verse-commentary') || '{}',
         studyPreferences: localStorage.getItem('study-analysis-preferences') || '{}',
         activityEvents: localStorage.getItem('activity-events-v1') || '[]',
+      studyProgress: localStorage.getItem('study-progress-v1') || JSON.stringify(readStudyProgress()),
         goalTargets: localStorage.getItem('goal-targets-v1') || '{}'
       }
     };
@@ -4788,6 +4812,7 @@ export default function App() {
           verseCommentary?: string;
           studyPreferences?: string;
           activityEvents?: string;
+        studyProgress?: string;
           goalTargets?: string;
         };
       };
@@ -4819,6 +4844,10 @@ export default function App() {
       if (typeof parsed.data.verseCommentary === 'string') localStorage.setItem('verse-commentary', parsed.data.verseCommentary);
       if (typeof parsed.data.studyPreferences === 'string') localStorage.setItem('study-analysis-preferences', parsed.data.studyPreferences);
       if (typeof parsed.data.activityEvents === 'string') localStorage.setItem('activity-events-v1', parsed.data.activityEvents);
+      if (typeof parsed.data.studyProgress === 'string') {
+        localStorage.setItem('study-progress-v1', parsed.data.studyProgress);
+        setStudyProgress(readStudyProgress());
+      }
       if (typeof parsed.data.goalTargets === 'string') localStorage.setItem('goal-targets-v1', parsed.data.goalTargets);
 
       alert('Backup importado com sucesso. O app será recarregado.');
@@ -4961,7 +4990,7 @@ export default function App() {
             bibleVersionCodes={bibleVersionCodes}
           />
         );
-      case 'reading-plans': return <ReadingPlansScreen onBack={() => setScreen('home')} onOpenPlan={openPlanInBible} onOpenBibleTarget={openBibleTarget} />;
+      case 'reading-plans': return <ReadingPlansScreen onBack={() => setScreen('home')} onOpenPlan={openPlanInBible} onOpenBibleTarget={openBibleTarget} studyProgress={studyProgress} onToggleDay={toggleReadingPlanDay} />;
       default:
         return (
           <HomeScreen
