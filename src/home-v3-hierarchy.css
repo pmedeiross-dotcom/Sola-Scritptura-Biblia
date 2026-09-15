@@ -1,0 +1,27 @@
+/* Stage 12 — visual hierarchy for the active Home. Functional behavior is unchanged. */
+.ss-v3-inner{display:flex;flex-direction:column}
+.ss-v3-header{order:1}
+.ss-v3-hero{order:2}
+.ss-v3-section:nth-of-type(1){order:3}
+.ss-v3-section:nth-of-type(2){order:4}
+.ss-v3-resume{order:5}
+.ss-v3-section:nth-of-type(3){order:6}
+
+/* The saved reading path is the clearest next action, so it receives stronger visual weight. */
+.ss-v3-resume{position:relative;overflow:hidden;padding:23px 24px;border-width:1px;box-shadow:0 14px 34px color-mix(in srgb,var(--accent-500) 10%,transparent)}
+.ss-v3-resume:before{content:'';position:absolute;inset:0 auto 0 0;width:4px;background:var(--accent-500)}
+.ss-v3-resume-icon{width:48px;height:48px;border-radius:15px}
+.ss-v3-resume h2{font-size:21px}
+.ss-v3-resume>button{min-height:42px;padding-inline:15px;box-shadow:0 7px 18px color-mix(in srgb,var(--accent-500) 18%,transparent)}
+
+/* Secondary blocks stay quieter to reduce competition with the main reading path. */
+.ss-v3-section:nth-of-type(1),.ss-v3-section:nth-of-type(2){opacity:.96}
+.ss-v3-section:nth-of-type(3) .ss-v3-plan{box-shadow:none;background:rgba(255,255,255,.66)}
+.dark .ss-v3-section:nth-of-type(3) .ss-v3-plan{background:rgba(22,31,34,.66)}
+
+@media(max-width:640px){
+  .ss-v3-resume{padding:19px 18px;gap:12px}
+  .ss-v3-resume-icon{width:42px;height:42px}
+  .ss-v3-resume h2{font-size:19px}
+  .ss-v3-resume>button{margin-left:54px;min-height:40px}
+}
