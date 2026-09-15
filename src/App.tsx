@@ -46,6 +46,7 @@ import { BELGIC_CONFESSION } from './data/belgicConfession';
 import strongsOpenScriptures from './data/strongs-open-scriptures.json';
 import OnboardingModal from './components/OnboardingModal';
 import HomeScreenV3 from './components/HomeScreenV3';
+import { appendActivityEvent, readActivityEvents } from './activityTracking';
 import { processFile } from '../services/importer';
 import { getStoredVersions, saveBibleVersion, saveDictionaries, searchInDictionary, type StoredBibleMeta } from '../services/db';
 import type { DictionaryEntry } from '../types';
@@ -4314,7 +4315,7 @@ const BACKGROUND_THEME_OPTIONS: Array<{ id: BackgroundTheme; name: string; previ
 const isColorTheme = (value: string): value is ColorTheme => COLOR_THEME_OPTIONS.some(option => option.id === value);
 const isBackgroundTheme = (value: string): value is BackgroundTheme => BACKGROUND_THEME_OPTIONS.some(option => option.id === value);
 const isInternalReasoningMode = (value: string): value is InternalReasoningMode => ['auto', 'pastoral', 'didatico', 'analitico', 'socratico', 'canonico'].includes(value);
-const ENABLE_ACTIVITY_TRACKING = false;
+const ENABLE_ACTIVITY_TRACKING = true;
 
 // --- Main App ---
 
@@ -4386,7 +4387,7 @@ export default function App() {
       return [];
     }
   });
-  const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>([]);
+  const [activityEvents, setActivityEvents] = useState<ActivityEvent[]>(() => readActivityEvents());
   const [goalTargets, setGoalTargets] = useState<GoalTargets>(() => {
     const saved = localStorage.getItem('goal-targets-v1');
     if (saved) {
@@ -4503,19 +4504,9 @@ export default function App() {
 
   const trackActivity = (type: string, label: string) => {
     if (!ENABLE_ACTIVITY_TRACKING) return;
-    if (isUselessActivityEvent({ type, label })) return;
-
-    setActivityEvents(prev => {
-      const next = [{ id: `${Date.now()}-${Math.random()}`, type, label, timestamp: Date.now() }, ...prev].slice(0, 200);
-      localStorage.setItem('activity-events-v1', JSON.stringify(next));
-      return next;
-    });
+    setActivityEvents(prev => appendActivityEvent(prev, type, label));
   };
 
-  useEffect(() => {
-    localStorage.removeItem('activity-events-v1');
-    setActivityEvents([]);
-  }, []);
 
   const openPlanInBible = (plan: ReadingPlan) => {
     const target = getPlanReferenceTarget(plan);
