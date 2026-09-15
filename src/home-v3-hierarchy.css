@@ -15,12 +15,29 @@
 .ss-v3-resume h2{font-size:21px}
 .ss-v3-resume>button{min-height:42px;padding-inline:15px;box-shadow:0 7px 18px color-mix(in srgb,var(--accent-500) 18%,transparent)}
 
-/* Secondary blocks stay quieter to reduce competition with the main reading path. */
-.ss-v3-section:nth-of-type(1),.ss-v3-section:nth-of-type(2){opacity:.96}
+/* Quick actions: reading and study are primary; search and notes remain accessible but quieter. */
+.ss-v3-primary-grid .ss-v3-primary:nth-child(-n+2){min-height:116px;border-color:color-mix(in srgb,var(--accent-500) 18%,transparent);background:linear-gradient(145deg,rgba(255,255,255,.92),color-mix(in srgb,var(--accent-500) 5%,transparent));box-shadow:0 12px 30px color-mix(in srgb,var(--accent-500) 8%,transparent)}
+.ss-v3-primary-grid .ss-v3-primary:nth-child(-n+2) .ss-v3-primary-icon{width:46px;height:46px}
+.ss-v3-primary-grid .ss-v3-primary:nth-child(n+3){min-height:92px;opacity:.88;box-shadow:none}
+.dark .ss-v3-primary-grid .ss-v3-primary:nth-child(-n+2){background:linear-gradient(145deg,rgba(22,31,34,.94),color-mix(in srgb,var(--accent-500) 7%,transparent))}
+.dark .ss-v3-primary-grid .ss-v3-primary:nth-child(n+3){opacity:.82}
+
+/* Secondary resources are intentionally compact and calm. */
+.ss-v3-section:nth-of-type(2) .ss-v3-resource-grid{opacity:.9}
+.ss-v3-section:nth-of-type(2) .ss-v3-resource{min-height:74px}
+.ss-v3-section:nth-of-type(2) .ss-v3-resource strong{font-weight:800}
+
+/* Reading plans remain useful without competing with the resume action. */
 .ss-v3-section:nth-of-type(3) .ss-v3-plan{box-shadow:none;background:rgba(255,255,255,.66)}
 .dark .ss-v3-section:nth-of-type(3) .ss-v3-plan{background:rgba(22,31,34,.66)}
 
+@media(max-width:900px){
+  .ss-v3-primary-grid .ss-v3-primary:nth-child(-n+2){min-height:108px}
+}
+
 @media(max-width:640px){
+  .ss-v3-primary-grid .ss-v3-primary:nth-child(-n+2){min-height:102px}
+  .ss-v3-primary-grid .ss-v3-primary:nth-child(n+3){min-height:88px}
   .ss-v3-resume{padding:19px}
   .ss-v3-resume > button{margin-left:0;width:100%;justify-content:center}
 }
