@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Book, Search, History, Settings as SettingsIcon, ChevronRight, Share2, MessageSquare, Sparkles, Library, Bookmark, Highlighter, Calendar, Layers } from 'lucide-react';
 import { getStudyPlanProgress, readStudyProgress, toggleStudyDay, writeStudyProgress, type StudyProgressState } from '../studyProgress';
+import '../home-v3.css';
 
 type ReadingPlan = { id: string; title: string; progress: number; days: number; currentDay: number };
 type HomeScreenV3Props = { onNavigate: (screen: 'home' | 'bible' | 'study' | 'confessions' | 'library' | 'settings' | 'reading-plans') => void; onOpenPlan: (plan: ReadingPlan) => void };
