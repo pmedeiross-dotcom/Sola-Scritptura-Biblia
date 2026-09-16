@@ -20,11 +20,18 @@ export interface StoredBibleMeta {
   importedAt: number;
 }
 
+let dbPromise: Promise<IDBDatabase> | null = null;
+
 export const initDB = (): Promise<IDBDatabase> => {
-  return new Promise((resolve, reject) => {
+  if (dbPromise) return dbPromise;
+
+  dbPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-    request.onerror = (event) => reject('Erro ao abrir banco de dados');
+    request.onerror = () => {
+      dbPromise = null;
+      reject('Erro ao abrir banco de dados');
+    };
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
@@ -71,9 +78,16 @@ export const initDB = (): Promise<IDBDatabase> => {
     };
 
     request.onsuccess = (event) => {
-      resolve((event.target as IDBOpenDBRequest).result);
+      const db = (event.target as IDBOpenDBRequest).result;
+      db.onversionchange = () => {
+        db.close();
+        dbPromise = null;
+      };
+      resolve(db);
     };
   });
+
+  return dbPromise;
 };
 
 const getAllFromStore = async <T>(storeName: string): Promise<T[]> => {
