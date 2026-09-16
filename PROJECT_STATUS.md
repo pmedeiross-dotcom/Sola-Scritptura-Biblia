@@ -25,6 +25,48 @@
 11. Qualidade, CI e Vercel: **CONCLUÍDA**
 12. Evolução visual da Home: **CONCLUÍDA**
 13. Hardening da persistência IndexedDB: **CONCLUÍDA**
+14. Decomposição de `App.tsx`: **EM ANDAMENTO — primeiro utilitário extraído; integração no `App.tsx` ainda pendente**
+15. Redesign visual moderno da Home: **EM ANDAMENTO — layout premium aplicado, aguardando validação de CI/Vercel**
+
+## Etapa 15: Redesign visual moderno da Home - em andamento
+
+Objetivo: aproximar a Home ativa (`HomeScreenV3`) do layout visual aprovado pelo usuário, com aparência moderna, premium e responsiva, sem alterar os fluxos e funções existentes.
+
+### Implementação - 2026-09-16
+
+- Criada a camada visual `src/home-modern.css`.
+- Mantida a implementação ativa em `HomeScreenV3`, sem troca de componente nem alteração de contrato com `App.tsx`.
+- Aplicado shell visual com navegação lateral responsiva, marca Sola Scriptura, barra de busca visual, área hero, ações rápidas, versículo do dia, progresso, recursos, planos e continuidade de leitura.
+- Todos os botões preservam os handlers existentes de `onNavigate`, `onOpenPlan`, compartilhamento e conclusão de dias dos planos.
+- Não foram introduzidos novos serviços, armazenamento, APIs, estados persistentes ou mudanças de regra de negócio.
+- A proposta visual usa CSS e elementos já disponíveis no projeto, sem dependência externa de imagens ou fontes.
+- Em telas menores, a navegação lateral se adapta para uma barra superior horizontal e os grids passam a uma composição responsiva.
+- A mudança permanece isolada na Home; Reader, Study, Confissões, Biblioteca, Configurações e Planos continuam fora do escopo visual desta etapa.
+
+### Próxima validação
+
+- Executar type check e build.
+- Validar CI da branch.
+- Validar status Vercel.
+- Se todos os checks forem aprovados, considerar a Etapa 15 concluída.
+
+## Etapa 14: Decomposição de App.tsx - em andamento
+
+Objetivo: reduzir a concentração estrutural de `src/App.tsx` por extrações pequenas, independentes e de baixo risco, sem alterar comportamento funcional.
+
+### Análise e implementação parcial - 2026-09-16
+
+- `App.tsx` concentra utilitários, tipos, dados estáticos, múltiplas telas e o estado/orquestração do aplicativo.
+- Foi identificada uma primeira extração segura: o utilitário puro `cn`, independente de JSX e estado React.
+- Criado `src/utils/cn.ts`, centralizando `clsx` + `tailwind-merge` em um módulo reutilizável.
+- A integração efetiva do novo utilitário em `App.tsx` ainda não foi aplicada, portanto a etapa permanece em andamento.
+- `BibleScreen`, `ReadingPlansScreen`, `LibraryScreen` e `SettingsScreen` possuem estado e lógica próprios; a decomposição dessas telas ficará para etapas posteriores e menores.
+- Não será feita substituição integral de `App.tsx`; a decisão permanente de evitar esse tipo de operação permanece válida.
+
+### Próximo passo técnico
+
+- Integrar `src/utils/cn.ts` em `App.tsx` com alteração localizada, removendo a implementação duplicada.
+- Depois, executar type check, build, CI e Vercel antes de considerar a etapa concluída.
 
 ## Etapa 13: Hardening da persistência IndexedDB - concluída
 
@@ -83,11 +125,18 @@ Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, c
 6. Preservar dados existentes antes de qualquer migração de persistência.
 7. Não tratar progresso demonstrativo como progresso real do usuário.
 8. Não apresentar heurísticas locais como IA real.
+9. Registrar no `PROJECT_STATUS.md` toda mudança estrutural relevante antes de avançar para a validação final da etapa.
 
 ## Registro de alterações
 
 ### 2026-09-16
 
+- Etapa 15 iniciada para aplicar o layout visual moderno aprovado pelo usuário.
+- Criado `src/home-modern.css` com shell escuro, navegação lateral responsiva, hero, cards, progresso, recursos e planos.
+- `HomeScreenV3` recebeu apenas alterações de apresentação e organização visual, mantendo os handlers e fluxos existentes.
+- Etapa 14 iniciada com análise estrutural de `App.tsx`.
+- Criado `src/utils/cn.ts` como primeiro utilitário centralizado da etapa.
+- `PROJECT_STATUS.md` atualizado para registrar que a integração do utilitário em `App.tsx` ainda está pendente.
 - Etapa 13 concluída após análise do estado real do código e hardening da conexão IndexedDB.
 - PR #18 integrada à `main` com merge commit `d6f1478eb92050b973c21f1dc832be95857dc9cb`.
 - CI da Etapa 13 aprovado.
