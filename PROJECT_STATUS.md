@@ -24,21 +24,34 @@
 10. Arquitetura e performance: **CONCLUÍDA**
 11. Qualidade, CI e Vercel: **CONCLUÍDA**
 12. Evolução visual da Home: **CONCLUÍDA**
+13. Hardening da persistência IndexedDB: **EM ANDAMENTO**
 
-## Etapa 11: Qualidade, CI e Vercel — concluída
+## Etapa 13: Hardening da persistência IndexedDB — em andamento
 
-Validação final realizada sobre o estado consolidado da `main`.
+Objetivo: reduzir overhead desnecessário nas operações de persistência sem alterar o modelo de dados, os stores existentes ou o comportamento funcional da aplicação.
 
-- Commit de referência validado: `53a315edde7b160467dec2cb9ee3aa1b8faed5df`.
-- GitHub Actions `quality`: concluído com sucesso.
-- Instalação de dependências (`npm ci`): sucesso.
-- Type check (`npm run lint`): sucesso.
-- Build (`npm run build`): sucesso.
-- Status do commit na integração GitHub: `Vercel` com estado `success`.
-- Deploy Vercel associado ao commit confirmado pelo status do GitHub.
-- Workflow legado `Home V4 (disabled)` permanece explicitamente desativado e não reescreve código-fonte.
-- Nenhuma falha atual de CI foi identificada na validação da etapa.
-- Nenhuma alteração funcional foi necessária durante a validação final.
+### Análise inicial — 2026-09-16
+
+- `services/db.ts` abre uma nova conexão IndexedDB em cada chamada de leitura ou escrita por meio de `indexedDB.open(...)`.
+- O mesmo módulo concentra múltiplas operações de leitura/escrita sobre Notes, Highlights, History, Study Progress, Bibles e Dictionaries.
+- O banco utiliza versão 5 e os stores existentes permanecem estáveis.
+- A mudança escolhida é de baixo risco: reutilizar a Promise da conexão aberta em vez de reabrir o banco a cada operação.
+- Em `onversionchange`, a conexão é fechada e o cache da Promise é limpo para permitir uma nova conexão após atualização de versão em outra aba/contexto.
+- Nenhum store, schema, chave ou formato de dado foi alterado.
+
+### Implementação realizada
+
+- Criado cache interno `dbPromise` em `services/db.ts`.
+- `initDB()` agora reutiliza a conexão enquanto ela permanece válida.
+- Falhas de abertura limpam o cache para permitir nova tentativa.
+- `onversionchange` fecha a conexão antiga e limpa o cache.
+- As funções públicas existentes continuam usando `initDB()` e mantêm suas assinaturas.
+
+### Validação pendente
+
+- CI: type check e build.
+- Vercel: validação do commit da branch.
+- Após aprovação, merge em `main` e nova validação da produção.
 
 ## Etapa 12: Evolução visual da Home — concluída
 
@@ -57,10 +70,6 @@ Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, c
 - CI do PR #17 concluído com sucesso: instalação, type check e build aprovados.
 - Vercel do commit da revisão visual concluído com estado `success`.
 - Nenhuma alteração funcional foi necessária durante a finalização.
-
-## Próxima etapa
-
-Etapa 13: análise geral do projeto e definição/executação do próximo ciclo com base no estado real do código, priorizando impacto, risco e preservação das funcionalidades existentes.
 
 ## Problemas conhecidos / pontos para revisão posterior
 
@@ -82,6 +91,12 @@ Etapa 13: análise geral do projeto e definição/executação do próximo ciclo
 ## Registro de alterações
 
 ### 2026-09-16
+
+- Etapa 13 iniciada com análise do estado real do código.
+- Identificado overhead de abertura repetida da conexão IndexedDB em `services/db.ts`.
+- Implementado cache seguro da conexão, sem alteração de schema ou contratos públicos.
+- Branch de validação: `feat/stage13-db-connection-hardening`.
+- CI/Vercel aguardando execução para validação antes do merge.
 
 - Etapa 12 concluída após revisão visual final da Home para mobile, larguras muito estreitas e tema escuro.
 - PR #17 foi integrada à `main` com merge commit `d2c0b5552aaf942b826ba5e1e2e86a11612c27fa`.
