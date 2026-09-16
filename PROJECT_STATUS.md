@@ -24,40 +24,36 @@
 10. Arquitetura e performance: **CONCLUÍDA**
 11. Qualidade, CI e Vercel: **CONCLUÍDA**
 12. Evolução visual da Home: **CONCLUÍDA**
-13. Hardening da persistência IndexedDB: **EM ANDAMENTO**
+13. Hardening da persistência IndexedDB: **CONCLUÍDA**
 
-## Etapa 13: Hardening da persistência IndexedDB — em andamento
+## Etapa 13: Hardening da persistência IndexedDB - concluída
 
 Objetivo: reduzir overhead desnecessário nas operações de persistência sem alterar o modelo de dados, os stores existentes ou o comportamento funcional da aplicação.
 
-### Análise inicial — 2026-09-16
+### Análise e implementação - 2026-09-16
 
-- `services/db.ts` abre uma nova conexão IndexedDB em cada chamada de leitura ou escrita por meio de `indexedDB.open(...)`.
+- `services/db.ts` abria uma nova conexão IndexedDB em cada chamada de leitura ou escrita por meio de `indexedDB.open(...)`.
 - O mesmo módulo concentra múltiplas operações de leitura/escrita sobre Notes, Highlights, History, Study Progress, Bibles e Dictionaries.
-- O banco utiliza versão 5 e os stores existentes permanecem estáveis.
-- A mudança escolhida é de baixo risco: reutilizar a Promise da conexão aberta em vez de reabrir o banco a cada operação.
-- Em `onversionchange`, a conexão é fechada e o cache da Promise é limpo para permitir uma nova conexão após atualização de versão em outra aba/contexto.
-- Nenhum store, schema, chave ou formato de dado foi alterado.
-
-### Implementação realizada
-
-- Criado cache interno `dbPromise` em `services/db.ts`.
-- `initDB()` agora reutiliza a conexão enquanto ela permanece válida.
+- O banco utiliza versão 5 e os stores existentes permaneceram estáveis.
+- Implementado cache interno `dbPromise` para reutilizar a conexão aberta enquanto ela permanece válida.
 - Falhas de abertura limpam o cache para permitir nova tentativa.
-- `onversionchange` fecha a conexão antiga e limpa o cache.
+- `onversionchange` fecha a conexão antiga e limpa o cache para permitir nova conexão após atualização de versão em outra aba/contexto.
+- Nenhum store, schema, chave ou formato de dado foi alterado.
 - As funções públicas existentes continuam usando `initDB()` e mantêm suas assinaturas.
 
-### Validação pendente
+### Validação final
 
-- CI: type check e build.
-- Vercel: validação do commit da branch.
-- Após aprovação, merge em `main` e nova validação da produção.
+- PR #18 integrada à `main` com merge commit `d6f1478eb92050b973c21f1dc832be95857dc9cb`.
+- GitHub Actions `CI` concluído com sucesso no commit da branch, incluindo as verificações de qualidade configuradas.
+- Status Vercel do commit da branch validado como `success`.
+- Alteração limitada à reutilização segura da conexão IndexedDB e à documentação operacional.
+- Nenhuma alteração funcional, de schema, stores, contratos públicos ou dados existentes foi necessária.
 
-## Etapa 12: Evolução visual da Home — concluída
+## Etapa 12: Evolução visual da Home - concluída
 
 Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, clareza das ações principais, continuidade de leitura/estudo e acabamento profissional, preservando as funcionalidades e a estabilidade conquistadas nas etapas anteriores.
 
-### Resultado final — 2026-09-16
+### Resultado final - 2026-09-16
 
 - Mantida a implementação ativa em `HomeScreenV3` sem alteração de lógica funcional.
 - Consolidada a camada de refinamento visual em `src/home-v3-hierarchy.css`.
@@ -92,17 +88,13 @@ Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, c
 
 ### 2026-09-16
 
-- Etapa 13 iniciada com análise do estado real do código.
-- Identificado overhead de abertura repetida da conexão IndexedDB em `services/db.ts`.
-- Implementado cache seguro da conexão, sem alteração de schema ou contratos públicos.
-- Branch de validação: `feat/stage13-db-connection-hardening`.
-- CI/Vercel aguardando execução para validação antes do merge.
-
+- Etapa 13 concluída após análise do estado real do código e hardening da conexão IndexedDB.
+- PR #18 integrada à `main` com merge commit `d6f1478eb92050b973c21f1dc832be95857dc9cb`.
+- CI da Etapa 13 aprovado.
+- Vercel da Etapa 13 validado como `success`.
+- `PROJECT_STATUS.md` atualizado para registrar a conclusão da Etapa 13.
 - Etapa 12 concluída após revisão visual final da Home para mobile, larguras muito estreitas e tema escuro.
 - PR #17 foi integrada à `main` com merge commit `d2c0b5552aaf942b826ba5e1e2e86a11612c27fa`.
-- CI do PR #17 aprovado: `quality`, type check e build com sucesso.
-- Vercel do commit da revisão visual validado como `success`.
-- `PROJECT_STATUS.md` atualizado para registrar a conclusão da Etapa 12.
 
 ### 2026-09-15
 
@@ -111,5 +103,3 @@ Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, c
 - Status Vercel do commit de produção validado como `success`.
 - Workflow legado de Home V4 confirmado como desativado.
 - Etapa 11 concluída sem necessidade de alteração funcional.
-- Etapa 12 segue em andamento com a primeira camada visual, o refinamento da hierarquia e a diferenciação das ações rápidas já registrados.
-- PR #16 foi integrado à `main`, consolidando o refinamento visual das ações rápidas, recursos e comportamento mobile.
