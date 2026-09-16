@@ -26,9 +26,9 @@
 12. Evolução visual da Home: **CONCLUÍDA**
 13. Hardening da persistência IndexedDB: **CONCLUÍDA**
 14. Decomposição de `App.tsx`: **EM ANDAMENTO — primeiro utilitário extraído; integração no `App.tsx` ainda pendente**
-15. Redesign visual moderno da Home: **EM ANDAMENTO — layout premium aplicado, aguardando validação de CI/Vercel**
+15. Redesign visual moderno da Home: **CONCLUÍDA**
 
-## Etapa 15: Redesign visual moderno da Home - em andamento
+## Etapa 15: Redesign visual moderno da Home - concluída
 
 Objetivo: aproximar a Home ativa (`HomeScreenV3`) do layout visual aprovado pelo usuário, com aparência moderna, premium e responsiva, sem alterar os fluxos e funções existentes.
 
@@ -43,12 +43,13 @@ Objetivo: aproximar a Home ativa (`HomeScreenV3`) do layout visual aprovado pelo
 - Em telas menores, a navegação lateral se adapta para uma barra superior horizontal e os grids passam a uma composição responsiva.
 - A mudança permanece isolada na Home; Reader, Study, Confissões, Biblioteca, Configurações e Planos continuam fora do escopo visual desta etapa.
 
-### Próxima validação
+### Validação final
 
-- Executar type check e build.
-- Validar CI da branch.
-- Validar status Vercel.
-- Se todos os checks forem aprovados, considerar a Etapa 15 concluída.
+- PR #20 integrada à `main` com merge commit `68988abfb7b6bd4e8b1aba0afce44b97846755b3`.
+- CI da branch da Etapa 15 concluído com sucesso no workflow #290.
+- Status Vercel do commit da branch validado como `success`.
+- Merge realizado somente após CI e Vercel estarem aprovados.
+- Alteração limitada à apresentação e organização visual da Home, sem mudanças em serviços, persistência ou contratos de navegação.
 
 ## Etapa 14: Decomposição de App.tsx - em andamento
 
@@ -131,12 +132,10 @@ Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, c
 
 ### 2026-09-16
 
-- Etapa 15 iniciada para aplicar o layout visual moderno aprovado pelo usuário.
-- Criado `src/home-modern.css` com shell escuro, navegação lateral responsiva, hero, cards, progresso, recursos e planos.
-- `HomeScreenV3` recebeu apenas alterações de apresentação e organização visual, mantendo os handlers e fluxos existentes.
-- Etapa 14 iniciada com análise estrutural de `App.tsx`.
-- Criado `src/utils/cn.ts` como primeiro utilitário centralizado da etapa.
-- `PROJECT_STATUS.md` atualizado para registrar que a integração do utilitário em `App.tsx` ainda está pendente.
+- Etapa 15 concluída após aplicação do layout moderno aprovado e validação de CI/Vercel.
+- PR #20 integrada à `main` com merge commit `68988abfb7b6bd4e8b1aba0afce44b97846755b3`.
+- Atualizado o `PROJECT_STATUS.md` para registrar a conclusão da Etapa 15.
+- Etapa 14 permanece em andamento, com a integração do utilitário `cn` em `App.tsx` como próximo passo.
 - Etapa 13 concluída após análise do estado real do código e hardening da conexão IndexedDB.
 - PR #18 integrada à `main` com merge commit `d6f1478eb92050b973c21f1dc832be95857dc9cb`.
 - CI da Etapa 13 aprovado.
