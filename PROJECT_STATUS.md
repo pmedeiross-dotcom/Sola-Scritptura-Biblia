@@ -23,7 +23,7 @@
 9. Confissões/IA: **CONCLUÍDA**
 10. Arquitetura e performance: **CONCLUÍDA**
 11. Qualidade, CI e Vercel: **CONCLUÍDA**
-12. Evolução visual da Home: **EM ANDAMENTO**
+12. Evolução visual da Home: **CONCLUÍDA**
 
 ## Etapa 11: Qualidade, CI e Vercel — concluída
 
@@ -40,22 +40,27 @@ Validação final realizada sobre o estado consolidado da `main`.
 - Nenhuma falha atual de CI foi identificada na validação da etapa.
 - Nenhuma alteração funcional foi necessária durante a validação final.
 
-## Etapa 12: Evolução visual da Home — em andamento
+## Etapa 12: Evolução visual da Home — concluída
 
 Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, clareza das ações principais, continuidade de leitura/estudo e acabamento profissional, preservando as funcionalidades e a estabilidade conquistadas nas etapas anteriores.
 
-### Avanços registrados — 2026-09-16
+### Resultado final — 2026-09-16
 
 - Mantida a implementação ativa em `HomeScreenV3` sem alteração de lógica funcional.
-- Finalizada a camada de refinamento visual em `src/home-v3-hierarchy.css`.
+- Consolidada a camada de refinamento visual em `src/home-v3-hierarchy.css`.
 - Mobile até 640px recebeu ajustes finais de densidade, espaçamento, proporção dos cartões, leitura dos títulos e área de toque dos botões.
 - Larguras muito estreitas (até 380px) receberam tratamento específico para evitar compressão das quatro ações rápidas, excesso horizontal e botões pequenos.
 - O tema escuro recebeu reforço de contraste para textos secundários, bordas, fundos de cartões, ícones e barra de progresso.
-- A hierarquia permanece: versículo do dia como abertura, ações principais em seguida, continuidade da leitura com destaque próprio, recursos como navegação secundária e planos como conteúdo complementar.
+- A hierarquia final permanece: versículo do dia como abertura, ações principais em seguida, continuidade da leitura com destaque próprio, recursos como navegação secundária e planos como conteúdo complementar.
 - Nenhuma alteração foi feita em navegação, persistência, progresso, busca, compartilhamento, anotações, planos, Reader ou Study.
-- Commit da revisão visual final: `0d1256614d6fa9c54f821e078e9f6436e63e2de1` na branch `feat/stage12-home-final-polish`.
+- PR #17 foi integrada à `main` com merge commit `d2c0b5552aaf942b826ba5e1e2e86a11612c27fa`.
+- CI do PR #17 concluído com sucesso: instalação, type check e build aprovados.
+- Vercel do commit da revisão visual concluído com estado `success`.
+- Nenhuma alteração funcional foi necessária durante a finalização.
 
-Próximo foco: validar TypeScript/build e integração CI/Vercel desta revisão. A Etapa 12 só deve ser marcada como concluída após validação bem-sucedida.
+## Próxima etapa
+
+Etapa 13: análise geral do projeto e definição/executação do próximo ciclo com base no estado real do código, priorizando impacto, risco e preservação das funcionalidades existentes.
 
 ## Problemas conhecidos / pontos para revisão posterior
 
@@ -78,10 +83,11 @@ Próximo foco: validar TypeScript/build e integração CI/Vercel desta revisão.
 
 ### 2026-09-16
 
-- Etapa 12 recebeu a revisão visual final prevista para mobile e tema escuro.
-- Criada a branch `feat/stage12-home-final-polish` para validação isolada antes do merge em `main`.
-- Refinamento visual registrado no commit `0d1256614d6fa9c54f821e078e9f6436e63e2de1`.
-- A validação de CI/build/Vercel permanece pendente até a execução do pipeline da branch.
+- Etapa 12 concluída após revisão visual final da Home para mobile, larguras muito estreitas e tema escuro.
+- PR #17 foi integrada à `main` com merge commit `d2c0b5552aaf942b826ba5e1e2e86a11612c27fa`.
+- CI do PR #17 aprovado: `quality`, type check e build com sucesso.
+- Vercel do commit da revisão visual validado como `success`.
+- `PROJECT_STATUS.md` atualizado para registrar a conclusão da Etapa 12.
 
 ### 2026-09-15
 
