@@ -44,24 +44,18 @@ Validação final realizada sobre o estado consolidado da `main`.
 
 Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, clareza das ações principais, continuidade de leitura/estudo e acabamento profissional, preservando as funcionalidades e a estabilidade conquistadas nas etapas anteriores.
 
-### Avanços registrados — 2026-09-15
+### Avanços registrados — 2026-09-16
 
-- A Home ativa permanece `HomeScreenV3`.
-- Foi aplicada a primeira camada visual dedicada da Home por meio de `src/home-v3.css`, importada diretamente pelo componente ativo.
-- A camada visual estabelece hierarquia para cabeçalho, versículo do dia, ações primárias, recursos, planos de leitura e continuidade da leitura.
-- Foram incluídos comportamentos responsivos para desktop, tablet e mobile, além de estados visuais para tema escuro.
-- A implementação preserva a lógica existente de navegação, progresso dos planos, compartilhamento do versículo e retomada da leitura.
-- Foi refinado o bloco de continuidade da leitura para assumir maior protagonismo visual, com destaque lateral, contraste, espaçamento e botão de ação mais evidente.
-- As ações rápidas foram refinadas visualmente: “Ler Bíblia” e “Estudar” receberam maior peso como ações primárias, enquanto “Pesquisar” e “Anotações” permanecem acessíveis com menor competição visual.
-- A grade de recursos foi compactada visualmente para funcionar como navegação secundária, preservando os oito atalhos existentes.
-- A experiência mobile recebeu ajustes específicos de altura e proporção dos cartões, sem alterar a lógica de navegação.
-- A alteração permaneceu exclusivamente visual; nenhuma lógica de navegação, progresso ou persistência foi modificada.
-- Commit da primeira camada visual: `4de77862f238813ec6da760c0575d51b9a1ca58c`.
-- Refinamento anterior da hierarquia: `cc500ca4d1a6f9ce31b92a8d5dcab0b407472977`.
-- Refinamento de ações rápidas: PR #16, merge commit `8ec1e52749ab5956d84ce060618986d7f52aed38`.
-- Vercel do commit de validação das ações rápidas: `success`.
+- Mantida a implementação ativa em `HomeScreenV3` sem alteração de lógica funcional.
+- Finalizada a camada de refinamento visual em `src/home-v3-hierarchy.css`.
+- Mobile até 640px recebeu ajustes finais de densidade, espaçamento, proporção dos cartões, leitura dos títulos e área de toque dos botões.
+- Larguras muito estreitas (até 380px) receberam tratamento específico para evitar compressão das quatro ações rápidas, excesso horizontal e botões pequenos.
+- O tema escuro recebeu reforço de contraste para textos secundários, bordas, fundos de cartões, ícones e barra de progresso.
+- A hierarquia permanece: versículo do dia como abertura, ações principais em seguida, continuidade da leitura com destaque próprio, recursos como navegação secundária e planos como conteúdo complementar.
+- Nenhuma alteração foi feita em navegação, persistência, progresso, busca, compartilhamento, anotações, planos, Reader ou Study.
+- Commit da revisão visual final: `0d1256614d6fa9c54f821e078e9f6436e63e2de1` na branch `feat/stage12-home-final-polish`.
 
-Próximo foco: revisão visual final da composição da Home em larguras móveis, com atenção a densidade, legibilidade, espaçamento, tema escuro e equilíbrio entre continuidade, ações rápidas, recursos e planos, sem alterar a lógica funcional.
+Próximo foco: validar TypeScript/build e integração CI/Vercel desta revisão. A Etapa 12 só deve ser marcada como concluída após validação bem-sucedida.
 
 ## Problemas conhecidos / pontos para revisão posterior
 
@@ -81,6 +75,13 @@ Próximo foco: revisão visual final da composição da Home em larguras móveis
 8. Não apresentar heurísticas locais como IA real.
 
 ## Registro de alterações
+
+### 2026-09-16
+
+- Etapa 12 recebeu a revisão visual final prevista para mobile e tema escuro.
+- Criada a branch `feat/stage12-home-final-polish` para validação isolada antes do merge em `main`.
+- Refinamento visual registrado no commit `0d1256614d6fa9c54f821e078e9f6436e63e2de1`.
+- A validação de CI/build/Vercel permanece pendente até a execução do pipeline da branch.
 
 ### 2026-09-15
 
