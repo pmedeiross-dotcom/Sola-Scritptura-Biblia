@@ -25,6 +25,25 @@
 11. Qualidade, CI e Vercel: **CONCLUÍDA**
 12. Evolução visual da Home: **CONCLUÍDA**
 13. Hardening da persistência IndexedDB: **CONCLUÍDA**
+14. Decomposição de `App.tsx`: **EM ANDAMENTO — análise estrutural concluída; implementação ainda não aplicada**
+
+## Etapa 14: Decomposição de App.tsx - em andamento
+
+Objetivo: reduzir a concentração estrutural de `src/App.tsx` por extrações pequenas, independentes e de baixo risco, sem alterar comportamento funcional.
+
+### Análise inicial - 2026-09-16
+
+- `App.tsx` concentra utilitários, tipos, dados estáticos, múltiplas telas e o estado/orquestração do aplicativo.
+- Foi identificada uma primeira extração segura: utilitários puros compartilháveis, começando por `cn` e funções de transformação/parsing que não dependem de JSX ou estado React.
+- A análise também confirmou que `BibleScreen`, `ReadingPlansScreen`, `LibraryScreen` e `SettingsScreen` possuem estado e lógica próprios, portanto uma decomposição dessas telas deve ocorrer em etapas separadas.
+- Não será feita substituição integral de `App.tsx`; a decisão permanente de evitar esse tipo de operação permanece válida.
+- Nenhuma alteração funcional foi aplicada nesta etapa de análise.
+
+### Próximo passo técnico
+
+- Extrair primeiro um conjunto pequeno de funções puras para módulo dedicado.
+- Ajustar os imports de `App.tsx` de forma localizada.
+- Executar type check, build, CI e Vercel antes de considerar a etapa concluída.
 
 ## Etapa 13: Hardening da persistência IndexedDB - concluída
 
@@ -88,6 +107,8 @@ Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, c
 
 ### 2026-09-16
 
+- Etapa 14 iniciada com análise estrutural de `App.tsx`.
+- Primeira extração planejada: utilitários puros e independentes de estado/JSX.
 - Etapa 13 concluída após análise do estado real do código e hardening da conexão IndexedDB.
 - PR #18 integrada à `main` com merge commit `d6f1478eb92050b973c21f1dc832be95857dc9cb`.
 - CI da Etapa 13 aprovado.
