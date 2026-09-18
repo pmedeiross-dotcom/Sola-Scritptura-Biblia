@@ -171,3 +171,21 @@ Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, c
 - Vercel do mesmo commit validado como `success`.
 - PR #21 integrada à `main` com merge commit `b4bfacd515b953141c59833379cd11d8bc133f12`.
 - Revisão móvel complementar concluída sem alteração funcional.
+
+
+## Etapa 16: Sistema visual unificado do aplicativo - em andamento
+
+- Aplicado o mesmo sistema visual premium escuro da Home às telas internas do aplicativo.
+- Criado shell compartilhado com navegação lateral no desktop, navegação compacta no mobile e topbar de busca.
+- Normalizadas superfícies, cartões, campos de formulário, bordas, sombras, tipografia, ações primárias e leitura para a linguagem visual da Home.
+- Leitor recebeu tratamento visual próprio dentro do mesmo sistema, preservando sua estrutura e controles.
+- Integrado o utilitário `src/utils/cn.ts` em `App.tsx`, removendo a implementação duplicada.
+- Nenhuma regra de negócio, persistência ou contrato de navegação foi alterado.
+- PR #22 integrada à `main` com merge commit `85bf712f1ecd389f5b806fd6fc30d4180f52ce0d`.
+- CI #304 concluído com sucesso.
+- Vercel do commit da implementação validado como `success`.
+
+### Próximo passo
+
+- Fazer a revisão visual tela a tela das áreas internas e corrigir apenas inconsistências residuais específicas, se existirem.
+- Depois, validar novamente CI/Vercel antes de encerrar a etapa.
