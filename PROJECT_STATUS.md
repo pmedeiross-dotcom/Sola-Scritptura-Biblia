@@ -151,3 +151,15 @@ Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, c
 - Status Vercel do commit de produção validado como `success`.
 - Workflow legado de Home V4 confirmado como desativado.
 - Etapa 11 concluída sem necessidade de alteração funcional.
+
+## Revisão móvel complementar da Home - 2026-09-18
+
+- Revisada a Home ativa (HomeScreenV3) considerando as larguras de 700px, 430px e 360px.
+- Ajustada a densidade do cabeçalho e da busca em telas pequenas.
+- Reduzida a altura do hero e refinadas tipografia e espaçamento para preservar a hierarquia sem ocupar a tela em excesso.
+- Ações rápidas mantidas em duas colunas no mobile, com áreas de toque adequadas e descrições secundárias ocultadas para reduzir ruído visual.
+- Versículo do dia, progresso, recursos, planos e continuidade de leitura receberam compactação proporcional.
+- Planos passaram a empilhar os controles internamente em telas pequenas para evitar compressão horizontal.
+- Tratamento adicional para larguras muito estreitas até 360px.
+- Alteração exclusivamente visual em src/home-modern.css; nenhuma lógica, persistência, navegação ou handler funcional foi alterado.
+- Validação de CI e Vercel permanece pendente até a conclusão dos checks do commit desta revisão.
