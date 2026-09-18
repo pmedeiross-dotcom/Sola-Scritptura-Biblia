@@ -189,3 +189,12 @@ Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, c
 
 - Fazer a revisão visual tela a tela das áreas internas e corrigir apenas inconsistências residuais específicas, se existirem.
 - Depois, validar novamente CI/Vercel antes de encerrar a etapa.
+
+
+## Correção da navegação duplicada - 2026-09-18
+
+- Removida a renderização do menu legado claro (`BottomNav`) das telas internas.
+- Mantida somente a navegação unificada em estilo escuro (`UnifiedProductChrome`).
+- Reforçado o fundo escuro do shell e da área principal interna para impedir o vazamento do fundo claro/papel.
+- PR #23 integrada à `main` com merge commit `daea7a39dda12f16019fd47d8f1034d6001f50da`.
+- Nenhuma regra de negócio, persistência ou contrato de navegação foi alterado.
