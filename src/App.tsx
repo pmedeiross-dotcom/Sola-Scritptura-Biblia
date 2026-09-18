@@ -5085,7 +5085,6 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {!isHome && <BottomNav active={screen} onChange={setScreen} />}
 
       <AnimatePresence>
         {showOnboarding && (
