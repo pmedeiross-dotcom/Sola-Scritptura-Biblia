@@ -130,6 +130,11 @@ Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, c
 
 ## Registro de alterações
 
+### 2026-09-18
+
+- Revisão móvel complementar da Home concluída e integrada após CI/Vercel aprovados.
+- PR #21 integrada à `main` com merge commit `b4bfacd515b953141c59833379cd11d8bc133f12`.
+
 ### 2026-09-16
 
 - Etapa 15 concluída após aplicação do layout moderno aprovado e validação de CI/Vercel.
@@ -162,4 +167,7 @@ Objetivo: evoluir a Home atual (`HomeScreenV3`) com foco em hierarquia visual, c
 - Planos passaram a empilhar os controles internamente em telas pequenas para evitar compressão horizontal.
 - Tratamento adicional para larguras muito estreitas até 360px.
 - Alteração exclusivamente visual em src/home-modern.css; nenhuma lógica, persistência, navegação ou handler funcional foi alterado.
-- Validação de CI e Vercel permanece pendente até a conclusão dos checks do commit desta revisão.
+- CI do commit `307c961d71485dfac7b13e9dcfbb082d746d9a92` concluído com sucesso no workflow #298 (`npm ci`, `npm run lint` e `npm run build`).
+- Vercel do mesmo commit validado como `success`.
+- PR #21 integrada à `main` com merge commit `b4bfacd515b953141c59833379cd11d8bc133f12`.
+- Revisão móvel complementar concluída sem alteração funcional.
