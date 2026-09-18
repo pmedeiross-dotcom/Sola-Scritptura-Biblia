@@ -31,8 +31,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from './utils/cn';
 const Markdown = React.lazy(() => import('react-markdown'));
 // ...existing code...
 import { BOOKS } from './services/bibleCatalog';
@@ -52,10 +51,6 @@ import { processFile } from '../services/importer';
 import { getStoredVersions, saveBibleVersion, saveDictionaries, searchInDictionary, type StoredBibleMeta } from '../services/db';
 import type { DictionaryEntry } from '../types';
 
-// --- Utility ---
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
 
 const LazyMarkdown = ({ children }: { children: string }) => (
   <Suspense fallback={<p className="text-sm text-gray-400">Carregando...</p>}>
@@ -4338,6 +4333,59 @@ const isBackgroundTheme = (value: string): value is BackgroundTheme => BACKGROUN
 const isInternalReasoningMode = (value: string): value is InternalReasoningMode => ['auto', 'pastoral', 'didatico', 'analitico', 'socratico', 'canonico'].includes(value);
 const ENABLE_ACTIVITY_TRACKING = true;
 
+// --- Unified product chrome ---
+const PRODUCT_NAV: Array<{ label: string; icon: typeof Book; screen: Screen }> = [
+  { label: 'Início', icon: HomeIcon, screen: 'home' },
+  { label: 'Bíblia', icon: Book, screen: 'bible' },
+  { label: 'Planos de Leitura', icon: Calendar, screen: 'reading-plans' },
+  { label: 'Estudo', icon: Sparkles, screen: 'study' },
+  { label: 'Confissões', icon: Library, screen: 'confessions' },
+  { label: 'Biblioteca', icon: Bookmark, screen: 'library' },
+  { label: 'Configurações', icon: SettingsIcon, screen: 'settings' },
+];
+
+const UnifiedProductChrome = ({ active, onNavigate }: { active: Screen; onNavigate: (screen: Screen) => void }) => (
+  <>
+    <aside className="ss-product-sidebar">
+      <div className="ss-product-brand">
+        <span className="ss-product-brand-mark"><Book className="w-5 h-5" /></span>
+        <div><strong>SOLA SCRIPTURA</strong><small>Bíblia</small></div>
+      </div>
+      <nav className="ss-product-nav" aria-label="Navegação principal">
+        {PRODUCT_NAV.map(({ label, icon: Icon, screen }) => (
+          <button key={screen} type="button" className={cn('ss-product-nav-item', active === screen && 'is-active')} onClick={() => onNavigate(screen)}>
+            <Icon className="w-[18px] h-[18px]" /><span>{label}</span>
+          </button>
+        ))}
+      </nav>
+      <div className="ss-product-quote">“Toda a Escritura é inspirada por Deus...”<strong>2 Timóteo 3:16</strong></div>
+    </aside>
+    <div className="ss-product-mobile-nav">
+      <div className="ss-product-brand ss-product-brand-mobile">
+        <span className="ss-product-brand-mark"><Book className="w-4 h-4" /></span>
+        <div><strong>SOLA SCRIPTURA</strong><small>Bíblia</small></div>
+      </div>
+      <div className="ss-product-mobile-items">
+        {PRODUCT_NAV.map(({ label, icon: Icon, screen }) => (
+          <button key={screen} type="button" className={cn('ss-product-mobile-item', active === screen && 'is-active')} onClick={() => onNavigate(screen)} title={label}>
+            <Icon className="w-4 h-4" />
+          </button>
+        ))}
+      </div>
+    </div>
+  </>
+);
+
+const UnifiedProductTopbar = ({ onNavigate }: { onNavigate: (screen: Screen) => void }) => (
+  <header className="ss-product-topbar">
+    <div className="ss-product-search"><Search className="w-5 h-5" /><span>Buscar na Bíblia (ex.: João 3:16, fé, graça, salvação...)</span></div>
+    <div className="ss-product-top-actions">
+      <button type="button" className="ss-product-icon-btn" onClick={() => onNavigate('settings')} aria-label="Configurações"><SettingsIcon className="w-5 h-5" /></button>
+      <button type="button" className="ss-product-icon-btn" onClick={() => onNavigate('settings')} aria-label="Tema"><Sun className="w-5 h-5" /></button>
+    </div>
+  </header>
+);
+
 // --- Main App ---
 
 export default function App() {
@@ -5010,15 +5058,19 @@ export default function App() {
     }
   };
 
+  const isHome = screen === 'home';
+
   return (
-    <div className="min-h-full flex flex-col bg-paper-50 dark:bg-navy-900 transition-colors duration-500 overflow-hidden lg:pl-24">
+    <div className={cn("ss-product-shell min-h-full flex flex-col transition-colors duration-500 overflow-hidden", isHome ? "ss-product-home" : "ss-product-inner") }>
+      {!isHome && <UnifiedProductChrome active={screen} onNavigate={setScreen} />}
+      {!isHome && <div className="ss-product-content"><UnifiedProductTopbar onNavigate={setScreen} /></div>}
       {!isOnline && (
         <div className="px-4 py-2 text-xs text-center font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 border-b border-amber-200 dark:border-amber-800">
           Você está offline. Alguns recursos podem ficar indisponíveis temporariamente.
         </div>
       )}
 
-      <main className={cn("flex-1 min-h-0 overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch] relative lg:w-full lg:max-w-6xl lg:mx-auto", screen === 'study' ? "overflow-hidden" : "overflow-y-auto") }>
+      <main className={cn("ss-product-main flex-1 min-h-0 overscroll-y-contain touch-pan-y [-webkit-overflow-scrolling:touch] relative", screen === 'study' ? "overflow-hidden" : "overflow-y-auto") }>
         <AnimatePresence mode="wait">
           <motion.div
             key={screen}
@@ -5033,7 +5085,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <BottomNav active={screen} onChange={setScreen} />
+      {!isHome && <BottomNav active={screen} onChange={setScreen} />}
 
       <AnimatePresence>
         {showOnboarding && (
